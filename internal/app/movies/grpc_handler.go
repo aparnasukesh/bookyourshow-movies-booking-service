@@ -44,3 +44,71 @@ func (h *GrpcHandler) RegisterMovie(ctx context.Context, req *movie_booking.Regi
 		Message: "create movie successfull",
 	}, nil
 }
+func (h *GrpcHandler) DeleteMovie(ctx context.Context, req *movie_booking.DeleteMovieRequest) (*movie_booking.DeleteMovieResponse, error) {
+	err := h.svc.DeleteMovie(ctx, int(req.MovieId))
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *GrpcHandler) GetMovieDetails(ctx context.Context, req *movie_booking.GetMovieDetailsRequest) (*movie_booking.GetMovieDetailsResponse, error) {
+	movie, err := h.svc.GetMovieDetails(ctx, int(req.MovieId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetMovieDetailsResponse{
+		Movie: &movie_booking.Movie{
+			MovieId:     req.MovieId,
+			Title:       movie.Title,
+			Description: movie.Description,
+			Duration:    int32(movie.Duration),
+			Genre:       movie.Genre,
+			ReleaseDate: movie.ReleaseDate.String(),
+			Rating:      float32(movie.Rating),
+		},
+	}, nil
+}
+func (h *GrpcHandler) UpdateMovie(ctx context.Context, req *movie_booking.UpdateMovieRequest) (*movie_booking.UpdateMovieResponse, error) {
+
+	date, err := utils.ParseDateString(req.ReleaseDate)
+	if err != nil {
+		return nil, err
+	}
+	err = h.svc.UpdateMovie(ctx, Movie{
+		Title:       req.Title,
+		Description: req.Description,
+		Duration:    int(req.Duration),
+		Genre:       req.Genre,
+		ReleaseDate: *date,
+		Rating:      float64(req.Rating),
+	}, int(req.MovieId))
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *GrpcHandler) ListMovies(ctx context.Context, req *movie_booking.ListMoviesRequest) (*movie_booking.ListMoviesResponse, error) {
+	response, err := h.svc.ListMovies(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcMovies []*movie_booking.Movie
+	for _, m := range response {
+		grpcMovie := &movie_booking.Movie{
+			Title:       m.Title,
+			Description: m.Description,
+			Duration:    int32(m.Duration),
+			Genre:       m.Genre,
+			ReleaseDate: m.ReleaseDate.String(),
+			Rating:      float32(m.Rating),
+		}
+		grpcMovies = append(grpcMovies, grpcMovie)
+	}
+
+	return &movie_booking.ListMoviesResponse{
+		Movies: grpcMovies,
+	}, nil
+}

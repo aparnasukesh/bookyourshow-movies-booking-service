@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/aparnasukesh/inter-communication v1.1.1 // indirect
+	github.com/aparnasukesh/inter-communication v1.1.8 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

@@ -7,7 +7,6 @@ import (
 
 	"github.com/aparnasukesh/movies-booking-svc/config"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
-	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -35,17 +34,6 @@ func NewSql(config config.Config) (*gorm.DB, error) {
 	}
 
 	dbInstance.AutoMigrate(&movies.Movie{})
-	err := dbInstance.AutoMigrate(
-		&theatres.Theater{},
-		&theatres.Screen{},
-		&theatres.Showtime{},
-		&theatres.MovieSchedule{},
-		&theatres.Seat{},
-		&theatres.SeatCategory{},
-	)
-	if err != nil {
-		log.Fatal("Failed to auto-migrate tables:", err)
-	}
 
 	log.Println("Successfully auto-migrated all tables.")
 

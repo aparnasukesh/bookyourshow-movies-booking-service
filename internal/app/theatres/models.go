@@ -3,57 +3,81 @@ package theatres
 import (
 	"time"
 
+	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"gorm.io/gorm"
 )
 
+// Theatres
 type Theater struct {
 	gorm.Model
-	Name            string          `gorm:"type:varchar(100);not null"`
-	Location        string          `gorm:"type:varchar(255);not null"`
-	NumberOfScreens int             `gorm:"not null"`
-	OwnerID         uint            `gorm:"not null"`
-	Screens         []Screen        `gorm:"foreignKey:TheaterID"`
+	Name            string          `json:"name"`
+	Location        string          `json:"location"`
+	OwnerID         uint            `json:"owner_id"`
+	NumberOfScreens int             `json:"number_of_screens"`
+	TheaterTypeID   int             `json:"theater_type_id"`
+	TheaterType     TheaterType     `gorm:"foreignKey:TheaterTypeID"`
+	TheaterScreens  []TheaterScreen `gorm:"foreignKey:TheaterID"`
 	MovieSchedules  []MovieSchedule `gorm:"foreignKey:TheaterID"`
 }
 
-type Screen struct {
+type TheaterType struct {
 	gorm.Model
-	TheaterID    uint       `gorm:"not null"`
-	ScreenNumber int        `gorm:"not null"`
-	SeatCapacity int        `gorm:"not null"`
-	ScreenTypeID uint       `gorm:"not null"`
-	Showtimes    []Showtime `gorm:"foreignKey:ScreenID"`
+	TheaterTypeName string    `json:"theater_type_name"`
+	Theaters        []Theater `gorm:"foreignKey:TheaterTypeID"`
+}
+
+type ScreenType struct {
+	gorm.Model
+	ScreenTypeName string          `json:"screen_type_name"`
+	TheaterScreens []TheaterScreen `gorm:"foreignKey:ScreenTypeID"`
+}
+
+type TheaterScreen struct {
+	gorm.Model
+	TheaterID    int        `json:"theater_id"`
+	ScreenNumber int        `json:"screen_number"`
+	SeatCapacity int        `json:"seat_capacity"`
+	ScreenTypeID int        `json:"screen_type_id"`
+	Theater      Theater    `gorm:"foreignKey:TheaterID"`
+	ScreenType   ScreenType `gorm:"foreignKey:ScreenTypeID"`
 	Seats        []Seat     `gorm:"foreignKey:ScreenID"`
+	Showtimes    []Showtime `gorm:"foreignKey:ScreenID"`
 }
 
 type Showtime struct {
 	gorm.Model
-	MovieID        uint            `gorm:"not null"`
-	ScreenID       uint            `gorm:"not null"`
-	ShowDate       time.Time       `gorm:"not null"`
-	ShowTime       time.Time       `gorm:"not null"`
-	MovieSchedules []MovieSchedule `gorm:"foreignKey:ShowtimeID"`
+	MovieID       int           `json:"movie_id"`
+	ScreenID      int           `json:"screen_id"`
+	ShowDate      time.Time     `json:"show_date"`
+	ShowTime      time.Time     `json:"show_time"`
+	Movie         movies.Movie  `gorm:"foreignKey:MovieID"`
+	TheaterScreen TheaterScreen `gorm:"foreignKey:ScreenID"`
 }
 
 type MovieSchedule struct {
 	gorm.Model
-	MovieID    uint `gorm:"not null"`
-	TheaterID  uint `gorm:"not null"`
-	ShowtimeID uint `gorm:"not null"`
-}
-
-type Seat struct {
-	gorm.Model
-	ScreenID       uint   `gorm:"not null"`
-	SeatNumber     int    `gorm:"not null"`
-	Row            string `gorm:"type:varchar(10);not null"`
-	Column         string `gorm:"type:varchar(10);not null"`
-	SeatCategoryID uint   `gorm:"not null"`
+	MovieID    int          `json:"movie_id"`
+	TheaterID  int          `json:"theater_id"`
+	ShowtimeID int          `json:"showtime_id"`
+	Movie      movies.Movie `gorm:"foreignKey:MovieID"`
+	Theater    Theater      `gorm:"foreignKey:TheaterID"`
+	Showtime   Showtime     `gorm:"foreignKey:ShowtimeID"`
 }
 
 type SeatCategory struct {
 	gorm.Model
-	SeatCategoryName  string  `gorm:"type:varchar(50);not null"`
-	SeatCategoryPrice float64 `gorm:"type:decimal(10,2);not null"`
+	SeatCategoryName  string  `json:"seat_category_name"`
+	SeatCategoryPrice float64 `json:"seat_category_price"`
 	Seats             []Seat  `gorm:"foreignKey:SeatCategoryID"`
+}
+
+type Seat struct {
+	gorm.Model
+	ScreenID       int           `json:"screen_id"`
+	SeatNumber     string        `json:"seat_number"`
+	Row            string        `json:"row"`
+	Column         int           `json:"column"`
+	SeatCategoryID int           `json:"seat_category_id"`
+	TheaterScreen  TheaterScreen `gorm:"foreignKey:ScreenID"`
+	SeatCategory   SeatCategory  `gorm:"foreignKey:SeatCategoryID"`
 }
