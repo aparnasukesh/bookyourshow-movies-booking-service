@@ -17,6 +17,7 @@ func NewGrpcHandler(svc Service) GrpcHandler {
 	}
 }
 
+// theater type
 func (h *GrpcHandler) AddTheaterType(ctx context.Context, req *movie_booking.AddTheaterTypeRequest) (*movie_booking.AddTheaterTypeResponse, error) {
 	if err := h.svc.AddTheaterType(ctx, TheaterType{
 		TheaterTypeName: req.TheaterTypeName,
@@ -105,5 +106,196 @@ func (h *GrpcHandler) ListTheaterTypes(ctx context.Context, req *movie_booking.L
 
 	return &movie_booking.ListTheaterTypeResponse{
 		TheaterTypes: grpcTheaterTypes,
+	}, nil
+}
+
+// screen type
+func (h *GrpcHandler) AddScreenType(ctx context.Context, req *movie_booking.AddScreenTypeRequest) (*movie_booking.AddScreenTypeResponse, error) {
+	if err := h.svc.AddScreenType(ctx, ScreenType{
+		ScreenTypeName: req.ScreenTypeName,
+	}); err != nil {
+		return &movie_booking.AddScreenTypeResponse{
+			Message: "failed to add screen type",
+		}, err
+	}
+	return &movie_booking.AddScreenTypeResponse{
+		Message: "successfully added screen type",
+	}, nil
+}
+
+func (h *GrpcHandler) DeleteScreenTypeByID(ctx context.Context, req *movie_booking.DeleteScreenTypeRequest) (*movie_booking.DeleteScreenTypeResponse, error) {
+	if err := h.svc.DeleteScreenTypeByID(ctx, int(req.ScreenTypeId)); err != nil {
+		return &movie_booking.DeleteScreenTypeResponse{
+			Message: "failed to delete screen type",
+		}, err
+	}
+	return &movie_booking.DeleteScreenTypeResponse{
+		Message: "successfully deleted screen type",
+	}, nil
+}
+
+func (h *GrpcHandler) DeleteScreenTypeByName(ctx context.Context, req *movie_booking.DeleteScreenTypeByNameRequest) (*movie_booking.DeleteScreenTypeByNameResponse, error) {
+	if err := h.svc.DeleteScreenTypeByName(ctx, req.Name); err != nil {
+		return &movie_booking.DeleteScreenTypeByNameResponse{
+			Message: "failed to delete screen type",
+		}, err
+	}
+	return &movie_booking.DeleteScreenTypeByNameResponse{
+		Message: "successfully deleted screen type",
+	}, nil
+}
+
+func (h *GrpcHandler) GetScreenTypeByID(ctx context.Context, req *movie_booking.GetScreenTypeByIDRequest) (*movie_booking.GetScreenTypeByIDResponse, error) {
+	screenType, err := h.svc.GetScreenTypeByID(ctx, int(req.ScreenTypeId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetScreenTypeByIDResponse{
+		ScreenType: &movie_booking.ScreenType{
+			Id:             int32(screenType.ID),
+			ScreenTypeName: screenType.ScreenTypeName,
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetScreenTypeByName(ctx context.Context, req *movie_booking.GetScreenTypeByNameRequest) (*movie_booking.GetScreenTypeByNameResponse, error) {
+	screenType, err := h.svc.GetScreenTypeByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetScreenTypeByNameResponse{
+		ScreenType: &movie_booking.ScreenType{
+			Id:             int32(screenType.ID),
+			ScreenTypeName: screenType.ScreenTypeName,
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) UpdateScreenType(ctx context.Context, req *movie_booking.UpdateScreenTypeRequest) (*movie_booking.UpdateScreenTypeResponse, error) {
+	err := h.svc.UpdateScreenType(ctx, int(req.Id), ScreenType{
+		ScreenTypeName: req.ScreenTypeName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.UpdateScreenTypeResponse{}, nil
+}
+
+func (h *GrpcHandler) ListScreenTypes(ctx context.Context, req *movie_booking.ListScreenTypesRequest) (*movie_booking.ListScreenTypesResponse, error) {
+	response, err := h.svc.ListScreenTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcScreenTypes []*movie_booking.ScreenType
+	for _, m := range response {
+		grpcScreenType := &movie_booking.ScreenType{
+			Id:             int32(m.ID),
+			ScreenTypeName: m.ScreenTypeName,
+		}
+		grpcScreenTypes = append(grpcScreenTypes, grpcScreenType)
+	}
+
+	return &movie_booking.ListScreenTypesResponse{
+		ScreenTypes: grpcScreenTypes,
+	}, nil
+}
+
+// Seat categories
+func (h *GrpcHandler) AddSeatCategory(ctx context.Context, req *movie_booking.AddSeatCategoryRequest) (*movie_booking.AddSeatCategoryResponse, error) {
+	if err := h.svc.AddSeatCategory(ctx, SeatCategory{
+		SeatCategoryName:  req.SeatCategory.SeatCategoryName,
+		SeatCategoryPrice: req.SeatCategory.SeatCategoryPrice,
+	}); err != nil {
+		return &movie_booking.AddSeatCategoryResponse{
+			Message: "failed to add seat category",
+		}, err
+	}
+	return &movie_booking.AddSeatCategoryResponse{
+		Message: "successfully added seat category",
+	}, nil
+}
+
+func (h *GrpcHandler) DeleteSeatCategoryByID(ctx context.Context, req *movie_booking.DeleteSeatCategoryRequest) (*movie_booking.DeleteSeatCategoryResponse, error) {
+	if err := h.svc.DeleteSeatCategoryByID(ctx, int(req.SeatCategoryId)); err != nil {
+		return &movie_booking.DeleteSeatCategoryResponse{
+			Message: "failed to delete seat category",
+		}, err
+	}
+	return &movie_booking.DeleteSeatCategoryResponse{
+		Message: "successfully deleted seat category",
+	}, nil
+}
+
+func (h *GrpcHandler) DeleteSeatCategoryByName(ctx context.Context, req *movie_booking.DeleteSeatCategoryByNameRequest) (*movie_booking.DeleteSeatCategoryByNameResponse, error) {
+	if err := h.svc.DeleteSeatCategoryByName(ctx, req.Name); err != nil {
+		return &movie_booking.DeleteSeatCategoryByNameResponse{
+			Message: "failed to delete seat category",
+		}, err
+	}
+	return &movie_booking.DeleteSeatCategoryByNameResponse{
+		Message: "successfully deleted seat category",
+	}, nil
+}
+
+func (h *GrpcHandler) GetSeatCategoryByID(ctx context.Context, req *movie_booking.GetSeatCategoryByIDRequest) (*movie_booking.GetSeatCategoryByIDResponse, error) {
+	seatCategory, err := h.svc.GetSeatCategoryByID(ctx, int(req.SeatCategoryId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetSeatCategoryByIDResponse{
+		SeatCategory: &movie_booking.SeatCategory{
+			Id:                int32(seatCategory.ID),
+			SeatCategoryName:  seatCategory.SeatCategoryName,
+			SeatCategoryPrice: seatCategory.SeatCategoryPrice,
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetSeatCategoryByName(ctx context.Context, req *movie_booking.GetSeatCategoryByNameRequest) (*movie_booking.GetSeatCategoryByNameResponse, error) {
+	seatCategory, err := h.svc.GetSeatCategoryByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetSeatCategoryByNameResponse{
+		SeatCategory: &movie_booking.SeatCategory{
+			Id:                int32(seatCategory.ID),
+			SeatCategoryName:  seatCategory.SeatCategoryName,
+			SeatCategoryPrice: seatCategory.SeatCategoryPrice,
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) UpdateSeatCategory(ctx context.Context, req *movie_booking.UpdateSeatCategoryRequest) (*movie_booking.UpdateSeatCategoryResponse, error) {
+	err := h.svc.UpdateSeatCategory(ctx, int(req.Id), SeatCategory{
+		SeatCategoryName:  req.SeatCategory.SeatCategoryName,
+		SeatCategoryPrice: req.SeatCategory.SeatCategoryPrice,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.UpdateSeatCategoryResponse{
+		Message: "successfully updated seat category",
+	}, nil
+}
+
+func (h *GrpcHandler) ListSeatCategories(ctx context.Context, req *movie_booking.ListSeatCategoriesRequest) (*movie_booking.ListSeatCategoriesResponse, error) {
+	response, err := h.svc.ListSeatCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcSeatCategories []*movie_booking.SeatCategory
+	for _, m := range response {
+		grpcSeatCategory := &movie_booking.SeatCategory{
+			Id:                int32(m.ID),
+			SeatCategoryName:  m.SeatCategoryName,
+			SeatCategoryPrice: m.SeatCategoryPrice,
+		}
+		grpcSeatCategories = append(grpcSeatCategories, grpcSeatCategory)
+	}
+
+	return &movie_booking.ListSeatCategoriesResponse{
+		SeatCategories: grpcSeatCategories,
 	}, nil
 }
