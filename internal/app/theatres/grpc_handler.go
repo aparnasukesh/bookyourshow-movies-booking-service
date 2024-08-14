@@ -299,3 +299,103 @@ func (h *GrpcHandler) ListSeatCategories(ctx context.Context, req *movie_booking
 		SeatCategories: grpcSeatCategories,
 	}, nil
 }
+
+// Theater handlers
+func (h *GrpcHandler) AddTheater(ctx context.Context, req *movie_booking.AddTheaterRequest) (*movie_booking.AddTheaterResponse, error) {
+	if err := h.svc.AddTheater(ctx, Theater{
+		Name:            req.Name,
+		Location:        req.Location,
+		OwnerID:         uint(req.OwnerId),
+		NumberOfScreens: int(req.NumberOfScreens),
+		TheaterTypeID:   int(req.TheaterTypeId),
+	}); err != nil {
+		return &movie_booking.AddTheaterResponse{}, err
+	}
+	return &movie_booking.AddTheaterResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteTheaterByID(ctx context.Context, req *movie_booking.DeleteTheaterRequest) (*movie_booking.DeleteTheaterResponse, error) {
+	if err := h.svc.DeleteTheaterByID(ctx, int(req.TheaterId)); err != nil {
+		return &movie_booking.DeleteTheaterResponse{}, err
+	}
+	return &movie_booking.DeleteTheaterResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteTheaterByName(ctx context.Context, req *movie_booking.DeleteTheaterByNameRequest) (*movie_booking.DeleteTheaterByNameResponse, error) {
+	if err := h.svc.DeleteTheaterByName(ctx, req.Name); err != nil {
+		return &movie_booking.DeleteTheaterByNameResponse{}, err
+	}
+	return &movie_booking.DeleteTheaterByNameResponse{}, nil
+}
+
+func (h *GrpcHandler) GetTheaterByID(ctx context.Context, req *movie_booking.GetTheaterByIDRequest) (*movie_booking.GetTheaterByIDResponse, error) {
+	theater, err := h.svc.GetTheaterByID(ctx, int(req.TheaterId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetTheaterByIDResponse{
+		Theater: &movie_booking.Theater{
+			TheaterId:       int32(theater.ID),
+			Name:            theater.Name,
+			Location:        theater.Location,
+			OwnerId:         uint32(theater.OwnerID),
+			NumberOfScreens: int32(theater.NumberOfScreens),
+			TheaterTypeId:   int32(theater.TheaterTypeID),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetTheaterByName(ctx context.Context, req *movie_booking.GetTheaterByNameRequest) (*movie_booking.GetTheaterByNameResponse, error) {
+	theater, err := h.svc.GetTheaterByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetTheaterByNameResponse{
+		Theater: &movie_booking.Theater{
+			TheaterId:       int32(theater.ID),
+			Name:            theater.Name,
+			Location:        theater.Location,
+			OwnerId:         uint32(theater.OwnerID),
+			NumberOfScreens: int32(theater.NumberOfScreens),
+			TheaterTypeId:   int32(theater.TheaterTypeID),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) UpdateTheater(ctx context.Context, req *movie_booking.UpdateTheaterRequest) (*movie_booking.UpdateTheaterResponse, error) {
+	err := h.svc.UpdateTheater(ctx, int(req.TheaterId), Theater{
+		Name:            req.Name,
+		Location:        req.Location,
+		OwnerID:         uint(req.OwnerId),
+		NumberOfScreens: int(req.NumberOfScreens),
+		TheaterTypeID:   int(req.TheaterTypeId),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.UpdateTheaterResponse{}, nil
+}
+
+func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListTheatersRequest) (*movie_booking.ListTheatersResponse, error) {
+	response, err := h.svc.ListTheaters(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcTheaters []*movie_booking.Theater
+	for _, m := range response {
+		grpcTheater := &movie_booking.Theater{
+			TheaterId:       int32(m.ID),
+			Name:            m.Name,
+			Location:        m.Location,
+			OwnerId:         uint32(m.OwnerID),
+			NumberOfScreens: int32(m.NumberOfScreens),
+			TheaterTypeId:   int32(m.TheaterTypeID),
+		}
+		grpcTheaters = append(grpcTheaters, grpcTheater)
+	}
+
+	return &movie_booking.ListTheatersResponse{
+		Theaters: grpcTheaters,
+	}, nil
+}

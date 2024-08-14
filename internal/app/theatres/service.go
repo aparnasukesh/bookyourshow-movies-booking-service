@@ -36,6 +36,14 @@ type Service interface {
 	GetSeatCategoryByName(ctx context.Context, name string) (*SeatCategory, error)
 	UpdateSeatCategory(ctx context.Context, id int, seatCategory SeatCategory) error
 	ListSeatCategories(ctx context.Context) ([]SeatCategory, error)
+	// Theater
+	AddTheater(ctx context.Context, theater Theater) error
+	DeleteTheaterByID(ctx context.Context, id int) error
+	DeleteTheaterByName(ctx context.Context, name string) error
+	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
+	GetTheaterByName(ctx context.Context, name string) (*Theater, error)
+	UpdateTheater(ctx context.Context, id int, theater Theater) error
+	ListTheaters(ctx context.Context) ([]Theater, error)
 }
 
 func NewService(repo Repository) Service {
@@ -225,4 +233,65 @@ func (s *service) ListSeatCategories(ctx context.Context) ([]SeatCategory, error
 		return nil, err
 	}
 	return seatCategories, nil
+}
+
+// Theater
+func (s *service) AddTheater(ctx context.Context, theater Theater) error {
+	res, err := s.repo.FindTheaterByNameAndOwnerId(ctx, theater.Name, theater.OwnerID)
+	if res != nil && err == nil {
+		return errors.New("theater already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err := s.repo.CreateTheater(ctx, theater); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteTheaterByID(ctx context.Context, id int) error {
+	if err := s.repo.DeleteTheaterByID(ctx, id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteTheaterByName(ctx context.Context, name string) error {
+	if err := s.repo.DeleteTheaterByName(ctx, name); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) GetTheaterByID(ctx context.Context, id int) (*Theater, error) {
+	theater, err := s.repo.GetTheaterByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return theater, nil
+}
+
+func (s *service) GetTheaterByName(ctx context.Context, name string) (*Theater, error) {
+	theater, err := s.repo.GetTheaterByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return theater, nil
+}
+
+func (s *service) UpdateTheater(ctx context.Context, id int, theater Theater) error {
+	err := s.repo.UpdateTheater(ctx, id, theater)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
+	theaters, err := s.repo.ListTheaters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return theaters, nil
 }
