@@ -44,6 +44,14 @@ type Service interface {
 	GetTheaterByName(ctx context.Context, name string) (*Theater, error)
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
+	//Theater screen
+	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
+	DeleteTheaterScreenByID(ctx context.Context, id int) error
+	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
+	GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error)
+	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
+	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
+	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
 }
 
 func NewService(repo Repository) Service {
@@ -294,4 +302,66 @@ func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 		return nil, err
 	}
 	return theaters, nil
+}
+
+// Theater Screens
+
+func (s *service) AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error {
+	res, err := s.repo.FindTheaterScreenByTheaterIDAndScreenNumber(ctx, theaterScreen.TheaterID, theaterScreen.ScreenNumber)
+	if res != nil && err == nil {
+		return errors.New("theater screen already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err := s.repo.CreateTheaterScreen(ctx, theaterScreen); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteTheaterScreenByID(ctx context.Context, id int) error {
+	if err := s.repo.DeleteTheaterScreenByID(ctx, id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error {
+	if err := s.repo.DeleteTheaterScreenByNumber(ctx, theaterID, screenNumber); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error) {
+	theaterScreen, err := s.repo.GetTheaterScreenByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return theaterScreen, nil
+}
+
+func (s *service) GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error) {
+	theaterScreen, err := s.repo.GetTheaterScreenByNumber(ctx, theaterID, screenNumber)
+	if err != nil {
+		return nil, err
+	}
+	return theaterScreen, nil
+}
+
+func (s *service) UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error {
+	err := s.repo.UpdateTheaterScreen(ctx, id, theaterScreen)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error) {
+	theaterScreens, err := s.repo.ListTheaterScreens(ctx, theaterId)
+	if err != nil {
+		return nil, err
+	}
+	return theaterScreens, nil
 }

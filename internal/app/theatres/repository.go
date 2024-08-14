@@ -47,6 +47,15 @@ type Repository interface {
 	GetTheaterByName(ctx context.Context, name string) (*Theater, error)
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
+	//Theater screen
+	CreateTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
+	DeleteTheaterScreenByID(ctx context.Context, id int) error
+	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
+	FindTheaterScreenByTheaterIDAndScreenNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
+	GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error)
+	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
+	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
+	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -331,6 +340,75 @@ func (r *repository) ListTheaters(ctx context.Context) ([]Theater, error) {
 func (r *repository) UpdateTheater(ctx context.Context, id int, theater Theater) error {
 	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
 	result := r.db.Model(&Theater{}).Where("id = ?", id).Updates(theater)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// TheaterScreen
+func (r *repository) FindTheaterScreenByTheaterIDAndScreenNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error) {
+	theaterScreen := &TheaterScreen{}
+	res := r.db.Where("theater_id = ? AND screen_number = ?", theaterID, screenNumber).First(theaterScreen)
+	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, res.Error
+	}
+	return theaterScreen, nil
+}
+
+func (r *repository) CreateTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error {
+	if err := r.db.Create(&theaterScreen).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) DeleteTheaterScreenByID(ctx context.Context, id int) error {
+	theaterScreen := &TheaterScreen{}
+	if err := r.db.Where("id = ?", id).Delete(&theaterScreen).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error {
+	theaterScreen := &TheaterScreen{}
+	if err := r.db.Where("theater_id = ? AND screen_number = ?", theaterID, screenNumber).Delete(&theaterScreen).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error) {
+	theaterScreen := &TheaterScreen{}
+	if err := r.db.Where("id = ?", id).First(&theaterScreen).Error; err != nil {
+		return nil, err
+	}
+	return theaterScreen, nil
+}
+
+func (r *repository) GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error) {
+	theaterScreen := &TheaterScreen{}
+	if err := r.db.Where("theater_id = ? AND screen_number = ?", theaterID, screenNumber).First(&theaterScreen).Error; err != nil {
+		return nil, err
+	}
+	return theaterScreen, nil
+}
+
+func (r *repository) ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error) {
+	theaterScreens := []TheaterScreen{}
+	if err := r.db.Where("theater_id =?", theaterId).Find(&theaterScreens).Error; err != nil {
+		return nil, err
+	}
+	return theaterScreens, nil
+}
+
+func (r *repository) UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error {
+	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
+	result := r.db.Model(&TheaterScreen{}).Where("id = ?", id).Updates(theaterScreen)
 	if result.Error != nil {
 		return result.Error
 	}

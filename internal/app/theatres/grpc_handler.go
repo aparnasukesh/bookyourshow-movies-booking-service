@@ -399,3 +399,98 @@ func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListT
 		Theaters: grpcTheaters,
 	}, nil
 }
+
+// Theater - Screen
+func (h *GrpcHandler) AddTheaterScreen(ctx context.Context, req *movie_booking.AddTheaterScreenRequest) (*movie_booking.AddTheaterScreenResponse, error) {
+	if err := h.svc.AddTheaterScreen(ctx, TheaterScreen{
+		TheaterID:    int(req.TheaterScreen.ID),
+		ScreenNumber: int(req.TheaterScreen.ScreenNumber),
+		SeatCapacity: int(req.TheaterScreen.SeatCapacity),
+		ScreenTypeID: int(req.TheaterScreen.ScreenTypeID),
+	}); err != nil {
+		return &movie_booking.AddTheaterScreenResponse{}, err
+	}
+	return &movie_booking.AddTheaterScreenResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteTheaterScreenByID(ctx context.Context, req *movie_booking.DeleteTheaterScreenRequest) (*movie_booking.DeleteTheaterScreenResponse, error) {
+	if err := h.svc.DeleteTheaterScreenByID(ctx, int(req.TheaterScreenId)); err != nil {
+		return &movie_booking.DeleteTheaterScreenResponse{}, err
+	}
+	return &movie_booking.DeleteTheaterScreenResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteTheaterScreenByNumber(ctx context.Context, req *movie_booking.DeleteTheaterScreenByNumberRequest) (*movie_booking.DeleteTheaterScreenByNumberResponse, error) {
+	if err := h.svc.DeleteTheaterScreenByNumber(ctx, int(req.TheaterID), int(req.ScreenNumber)); err != nil {
+		return &movie_booking.DeleteTheaterScreenByNumberResponse{}, err
+	}
+	return &movie_booking.DeleteTheaterScreenByNumberResponse{}, nil
+}
+
+func (h *GrpcHandler) GetTheaterScreenByID(ctx context.Context, req *movie_booking.GetTheaterScreenByIDRequest) (*movie_booking.GetTheaterScreenByIDResponse, error) {
+	theaterScreen, err := h.svc.GetTheaterScreenByID(ctx, int(req.TheaterScreenId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetTheaterScreenByIDResponse{
+		TheaterScreen: &movie_booking.TheaterScreen{
+			ID:           uint32(theaterScreen.ID),
+			TheaterID:    int32(theaterScreen.TheaterID),
+			ScreenNumber: int32(theaterScreen.ScreenNumber),
+			SeatCapacity: int32(theaterScreen.SeatCapacity),
+			ScreenTypeID: int32(theaterScreen.ScreenTypeID),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetTheaterScreenByNumber(ctx context.Context, req *movie_booking.GetTheaterScreenByNumberRequest) (*movie_booking.GetTheaterScreenByNumberResponse, error) {
+	theaterScreen, err := h.svc.GetTheaterScreenByNumber(ctx, int(req.TheaterID), int(req.ScreenNumber))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetTheaterScreenByNumberResponse{
+		TheaterScreen: &movie_booking.TheaterScreen{
+			ID:           uint32(theaterScreen.ID),
+			TheaterID:    int32(theaterScreen.TheaterID),
+			ScreenNumber: int32(theaterScreen.ScreenNumber),
+			SeatCapacity: int32(theaterScreen.SeatCapacity),
+			ScreenTypeID: int32(theaterScreen.ScreenTypeID),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) UpdateTheaterScreen(ctx context.Context, req *movie_booking.UpdateTheaterScreenRequest) (*movie_booking.UpdateTheaterScreenResponse, error) {
+	err := h.svc.UpdateTheaterScreen(ctx, int(req.TheaterScreen.ID), TheaterScreen{
+		TheaterID:    int(req.TheaterScreen.TheaterID),
+		ScreenNumber: int(req.TheaterScreen.ScreenNumber),
+		SeatCapacity: int(req.TheaterScreen.SeatCapacity),
+		ScreenTypeID: int(req.TheaterScreen.ScreenTypeID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.UpdateTheaterScreenResponse{}, nil
+}
+
+func (h *GrpcHandler) ListTheaterScreens(ctx context.Context, req *movie_booking.ListTheaterScreensRequest) (*movie_booking.ListTheaterScreensResponse, error) {
+	response, err := h.svc.ListTheaterScreens(ctx, int(req.TheaterID))
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcTheaterScreens []*movie_booking.TheaterScreen
+	for _, m := range response {
+		grpcTheaterScreen := &movie_booking.TheaterScreen{
+			ID:           uint32(m.ID),
+			TheaterID:    int32(m.TheaterID),
+			ScreenNumber: int32(m.ScreenNumber),
+			SeatCapacity: int32(m.SeatCapacity),
+			ScreenTypeID: int32(m.ScreenTypeID),
+		}
+		grpcTheaterScreens = append(grpcTheaterScreens, grpcTheaterScreen)
+	}
+
+	return &movie_booking.ListTheaterScreensResponse{
+		TheaterScreens: grpcTheaterScreens,
+	}, nil
+}
