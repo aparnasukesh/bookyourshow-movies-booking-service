@@ -3,6 +3,7 @@ package theatres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -52,6 +53,14 @@ type Service interface {
 	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
 	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
 	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
+	//Show time
+	AddShowtime(ctx context.Context, showtime Showtime) error
+	DeleteShowtimeByID(ctx context.Context, id int) error
+	DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error
+	GetShowtimeByID(ctx context.Context, id int) (*Showtime, error)
+	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
+	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
+	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 }
 
 func NewService(repo Repository) Service {
@@ -305,7 +314,6 @@ func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 }
 
 // Theater Screens
-
 func (s *service) AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error {
 	res, err := s.repo.FindTheaterScreenByTheaterIDAndScreenNumber(ctx, theaterScreen.TheaterID, theaterScreen.ScreenNumber)
 	if res != nil && err == nil {
@@ -364,4 +372,66 @@ func (s *service) ListTheaterScreens(ctx context.Context, theaterId int) ([]Thea
 		return nil, err
 	}
 	return theaterScreens, nil
+}
+
+// Showtimes
+func (s *service) AddShowtime(ctx context.Context, showtime Showtime) error {
+	res, err := s.repo.FindShowtimeByDetails(ctx, showtime.MovieID, showtime.ScreenID, showtime.ShowDate, showtime.ShowTime)
+	if res != nil && err == nil {
+		return errors.New("showtime already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+
+	if err := s.repo.CreateShowtime(ctx, showtime); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteShowtimeByID(ctx context.Context, id int) error {
+	if err := s.repo.DeleteShowtimeByID(ctx, id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error {
+	if err := s.repo.DeleteShowtimeByDetails(ctx, movieID, screenID, showDate, showTime); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) GetShowtimeByID(ctx context.Context, id int) (*Showtime, error) {
+	showtime, err := s.repo.GetShowtimeByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return showtime, nil
+}
+
+func (s *service) GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error) {
+	showtime, err := s.repo.GetShowtimeByDetails(ctx, movieID, screenID, showDate, showTime)
+	if err != nil {
+		return nil, err
+	}
+	return showtime, nil
+}
+
+func (s *service) UpdateShowtime(ctx context.Context, id int, showtime Showtime) error {
+	err := s.repo.UpdateShowtime(ctx, id, showtime)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error) {
+	showtimes, err := s.repo.ListShowtimes(ctx, movieID)
+	if err != nil {
+		return nil, err
+	}
+	return showtimes, nil
 }

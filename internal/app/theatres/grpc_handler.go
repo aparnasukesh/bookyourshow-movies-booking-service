@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aparnasukesh/inter-communication/movie_booking"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GrpcHandler struct {
@@ -492,5 +493,100 @@ func (h *GrpcHandler) ListTheaterScreens(ctx context.Context, req *movie_booking
 
 	return &movie_booking.ListTheaterScreensResponse{
 		TheaterScreens: grpcTheaterScreens,
+	}, nil
+}
+
+// Showtime
+func (h *GrpcHandler) AddShowtime(ctx context.Context, req *movie_booking.AddShowtimeRequest) (*movie_booking.AddShowtimeResponse, error) {
+	if err := h.svc.AddShowtime(ctx, Showtime{
+		MovieID:  int(req.Showtime.MovieId),
+		ScreenID: int(req.Showtime.ScreenId),
+		ShowDate: req.Showtime.ShowDate.AsTime(),
+		ShowTime: req.Showtime.ShowTime.AsTime(),
+	}); err != nil {
+		return &movie_booking.AddShowtimeResponse{}, err
+	}
+	return &movie_booking.AddShowtimeResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteShowtimeByID(ctx context.Context, req *movie_booking.DeleteShowtimeRequest) (*movie_booking.DeleteShowtimeResponse, error) {
+	if err := h.svc.DeleteShowtimeByID(ctx, int(req.ShowtimeId)); err != nil {
+		return &movie_booking.DeleteShowtimeResponse{}, err
+	}
+	return &movie_booking.DeleteShowtimeResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteShowtimeByDetails(ctx context.Context, req *movie_booking.DeleteShowtimeByDetailsRequest) (*movie_booking.DeleteShowtimeByDetailsResponse, error) {
+	if err := h.svc.DeleteShowtimeByDetails(ctx, int(req.MovieId), int(req.ScreenId), req.ShowDate.AsTime(), req.ShowTime.AsTime()); err != nil {
+		return &movie_booking.DeleteShowtimeByDetailsResponse{}, err
+	}
+	return &movie_booking.DeleteShowtimeByDetailsResponse{}, nil
+}
+
+func (h *GrpcHandler) GetShowtimeByID(ctx context.Context, req *movie_booking.GetShowtimeByIDRequest) (*movie_booking.GetShowtimeByIDResponse, error) {
+	showtime, err := h.svc.GetShowtimeByID(ctx, int(req.ShowtimeId))
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetShowtimeByIDResponse{
+		Showtime: &movie_booking.Showtime{
+			Id:       uint32(showtime.ID),
+			MovieId:  int32(showtime.MovieID),
+			ScreenId: int32(showtime.ScreenID),
+			ShowDate: timestamppb.New(showtime.ShowDate),
+			ShowTime: timestamppb.New(showtime.ShowTime),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetShowtimeByDetails(ctx context.Context, req *movie_booking.GetShowtimeByDetailsRequest) (*movie_booking.GetShowtimeByDetailsResponse, error) {
+	showtime, err := h.svc.GetShowtimeByDetails(ctx, int(req.MovieId), int(req.ScreenId), req.ShowDate.AsTime(), req.ShowTime.AsTime())
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.GetShowtimeByDetailsResponse{
+		Showtime: &movie_booking.Showtime{
+			Id:       uint32(showtime.ID),
+			MovieId:  int32(showtime.MovieID),
+			ScreenId: int32(showtime.ScreenID),
+			ShowDate: timestamppb.New(showtime.ShowDate),
+			ShowTime: timestamppb.New(showtime.ShowTime),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) UpdateShowtime(ctx context.Context, req *movie_booking.UpdateShowtimeRequest) (*movie_booking.UpdateShowtimeResponse, error) {
+	err := h.svc.UpdateShowtime(ctx, int(req.Showtime.Id), Showtime{
+		MovieID:  int(req.Showtime.MovieId),
+		ScreenID: int(req.Showtime.ScreenId),
+		ShowDate: req.Showtime.ShowDate.AsTime(),
+		ShowTime: req.Showtime.ShowTime.AsTime(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &movie_booking.UpdateShowtimeResponse{}, nil
+}
+
+func (h *GrpcHandler) ListShowtimes(ctx context.Context, req *movie_booking.ListShowtimesRequest) (*movie_booking.ListShowtimesResponse, error) {
+	response, err := h.svc.ListShowtimes(ctx, int(req.MovieId))
+	if err != nil {
+		return nil, err
+	}
+
+	var grpcShowtimes []*movie_booking.Showtime
+	for _, m := range response {
+		grpcShowtime := &movie_booking.Showtime{
+			Id:       uint32(m.ID),
+			MovieId:  int32(m.MovieID),
+			ScreenId: int32(m.ScreenID),
+			ShowDate: timestamppb.New(m.ShowDate),
+			ShowTime: timestamppb.New(m.ShowTime),
+		}
+		grpcShowtimes = append(grpcShowtimes, grpcShowtime)
+	}
+
+	return &movie_booking.ListShowtimesResponse{
+		Showtimes: grpcShowtimes,
 	}, nil
 }

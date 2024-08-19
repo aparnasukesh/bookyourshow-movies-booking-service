@@ -28,7 +28,7 @@ func NewRepository(db *gorm.DB) Repository {
 func (r *repository) FindMovieByNameAndLanguage(ctx context.Context, movie Movie) (*Movie, error) {
 	movieData := &Movie{}
 
-	result := r.db.Where("title=? AND language=?", movie.Title, movie.Language).First(&movieData)
+	result := r.db.Where("title ILIKE ? AND language ILIKE ?", movie.Title, movie.Language).First(&movieData)
 	if result.Error != nil {
 		return nil, result.Error
 	}

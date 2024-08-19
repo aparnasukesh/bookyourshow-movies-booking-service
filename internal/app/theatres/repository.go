@@ -2,6 +2,7 @@ package theatres
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -56,6 +57,15 @@ type Repository interface {
 	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
 	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
 	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
+	//Show Time
+	FindShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
+	CreateShowtime(ctx context.Context, showtime Showtime) error
+	DeleteShowtimeByID(ctx context.Context, id int) error
+	DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error
+	GetShowtimeByID(ctx context.Context, id int) (*Showtime, error)
+	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
+	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
+	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -413,4 +423,85 @@ func (r *repository) UpdateTheaterScreen(ctx context.Context, id int, theaterScr
 		return result.Error
 	}
 	return nil
+}
+
+// Show time
+func (r *repository) FindShowtimeByMovieIDAndScreenID(ctx context.Context, movieID int, screenID int) (*Showtime, error) {
+	showtime := &Showtime{}
+	res := r.db.Where("movie_id = ? AND screen_id = ?", movieID, screenID).First(showtime)
+	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, res.Error
+	}
+	return showtime, nil
+}
+
+func (r *repository) CreateShowtime(ctx context.Context, showtime Showtime) error {
+	if err := r.db.Create(&showtime).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) DeleteShowtimeByID(ctx context.Context, id int) error {
+	showtime := &Showtime{}
+	if err := r.db.Where("id = ?", id).Delete(&showtime).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error {
+	showtime := &Showtime{}
+	if err := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).Delete(&showtime).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) GetShowtimeByID(ctx context.Context, id int) (*Showtime, error) {
+	showtime := &Showtime{}
+	if err := r.db.Where("id = ?", id).First(&showtime).Error; err != nil {
+		return nil, err
+	}
+	return showtime, nil
+}
+
+func (r *repository) GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error) {
+	showtime := &Showtime{}
+	if err := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).First(&showtime).Error; err != nil {
+		return nil, err
+	}
+	return showtime, nil
+}
+
+func (r *repository) ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error) {
+	showtimes := []Showtime{}
+	if err := r.db.Where("movie_id = ?", movieID).Find(&showtimes).Error; err != nil {
+		return nil, err
+	}
+	return showtimes, nil
+}
+
+func (r *repository) UpdateShowtime(ctx context.Context, id int, showtime Showtime) error {
+	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
+	result := r.db.Model(&Showtime{}).Where("id = ?", id).Updates(showtime)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (r *repository) FindShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error) {
+	showtime := &Showtime{}
+	res := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).First(showtime)
+	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, res.Error
+	}
+	return showtime, nil
 }

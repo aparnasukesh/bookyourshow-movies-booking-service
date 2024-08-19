@@ -2,6 +2,8 @@ package movies
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/aparnasukesh/inter-communication/movie_booking"
 	"github.com/aparnasukesh/movies-booking-svc/pkg/utils"
@@ -66,27 +68,40 @@ func (h *GrpcHandler) GetMovieDetails(ctx context.Context, req *movie_booking.Ge
 			Genre:       movie.Genre,
 			ReleaseDate: movie.ReleaseDate.String(),
 			Rating:      float32(movie.Rating),
+			Language:    movie.Language,
 		},
 	}, nil
 }
 func (h *GrpcHandler) UpdateMovie(ctx context.Context, req *movie_booking.UpdateMovieRequest) (*movie_booking.UpdateMovieResponse, error) {
-
-	date, err := utils.ParseDateString(req.ReleaseDate)
-	if err != nil {
-		return nil, err
+	var date *time.Time
+	var err error
+	if req.ReleaseDate != "" {
+		date, err = utils.ParseDateString(req.ReleaseDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date format for ReleaseDate: %w", err)
+		}
 	}
-	err = h.svc.UpdateMovie(ctx, Movie{
+
+	movie := Movie{
 		Title:       req.Title,
 		Description: req.Description,
 		Duration:    int(req.Duration),
 		Genre:       req.Genre,
-		ReleaseDate: *date,
 		Rating:      float64(req.Rating),
-	}, int(req.MovieId))
+		Language:    req.Language,
+	}
+	if date != nil {
+		movie.ReleaseDate = *date
+	}
+
+	err = h.svc.UpdateMovie(ctx, movie, int(req.MovieId))
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+
+	return &movie_booking.UpdateMovieResponse{
+		Message: "Movie updated successfully",
+	}, nil
 }
 
 func (h *GrpcHandler) ListMovies(ctx context.Context, req *movie_booking.ListMoviesRequest) (*movie_booking.ListMoviesResponse, error) {
@@ -104,6 +119,7 @@ func (h *GrpcHandler) ListMovies(ctx context.Context, req *movie_booking.ListMov
 			Genre:       m.Genre,
 			ReleaseDate: m.ReleaseDate.String(),
 			Rating:      float32(m.Rating),
+			Language:    m.Language,
 		}
 		grpcMovies = append(grpcMovies, grpcMovie)
 	}
