@@ -138,9 +138,13 @@ func (r *repository) ListTheaterTypes(ctx context.Context) ([]TheaterType, error
 
 func (r *repository) UpdateTheaterType(ctx context.Context, id int, theaterType TheaterType) error {
 	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
+
 	result := r.db.Model(&TheaterType{}).Where("id = ?", id).Updates(theaterType)
 	if result.Error != nil {
 		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
 	return nil
 }

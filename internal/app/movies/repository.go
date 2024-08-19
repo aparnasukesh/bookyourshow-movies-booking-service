@@ -75,6 +75,8 @@ func (r *repository) UpdateMovie(ctx context.Context, movie Movie, movieId int) 
 	if result.Error != nil {
 		return result.Error
 	}
-
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 	return nil
 }

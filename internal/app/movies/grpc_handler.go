@@ -81,7 +81,6 @@ func (h *GrpcHandler) UpdateMovie(ctx context.Context, req *movie_booking.Update
 			return nil, fmt.Errorf("invalid date format for ReleaseDate: %w", err)
 		}
 	}
-
 	movie := Movie{
 		Title:       req.Title,
 		Description: req.Description,
@@ -93,7 +92,6 @@ func (h *GrpcHandler) UpdateMovie(ctx context.Context, req *movie_booking.Update
 	if date != nil {
 		movie.ReleaseDate = *date
 	}
-
 	err = h.svc.UpdateMovie(ctx, movie, int(req.MovieId))
 	if err != nil {
 		return nil, err
