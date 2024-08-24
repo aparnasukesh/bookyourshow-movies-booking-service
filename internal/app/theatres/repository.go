@@ -2,6 +2,7 @@ package theatres
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -45,7 +46,7 @@ type Repository interface {
 	DeleteTheaterByName(ctx context.Context, name string) error
 	FindTheaterByNameAndOwnerId(ctx context.Context, theaterName string, theaterOwnerID uint) (*Theater, error)
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
-	GetTheaterByName(ctx context.Context, name string) (*Theater, error)
+	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
 	//Theater screen
@@ -98,16 +99,24 @@ func (r *repository) CreateTheaterType(ctx context.Context, theaterType TheaterT
 
 func (r *repository) DeleteTheaterTypeByID(ctx context.Context, id int) error {
 	theaterType := &TheaterType{}
-	if err := r.db.Where("id =?", id).Delete(&theaterType).Error; err != nil {
-		return err
+	result := r.db.Where("id=?", id).Delete(&theaterType)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no theater type found with ID %d", id)
 	}
 	return nil
 }
 
 func (r *repository) DeleteTheaterTypeByName(ctx context.Context, name string) error {
 	theaterType := &TheaterType{}
-	if err := r.db.Where("theater_type_name ILIKE ?", name).Delete(&theaterType).Error; err != nil {
-		return err
+	result := r.db.Where("theater_type_name ILIKE ?", name).Delete(&theaterType)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no theater type found with name %s", name)
 	}
 	return nil
 }
@@ -173,16 +182,24 @@ func (r *repository) CreateScreenType(ctx context.Context, screenType ScreenType
 
 func (r *repository) DeleteScreenTypeByID(ctx context.Context, id int) error {
 	screenType := &ScreenType{}
-	if err := r.db.Where("id = ?", id).Delete(&screenType).Error; err != nil {
-		return err
+	result := r.db.Where("id = ?", id).Delete(&screenType)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no screen type with id %d", id)
 	}
 	return nil
 }
 
 func (r *repository) DeleteScreenTypeByName(ctx context.Context, name string) error {
 	screenType := &ScreenType{}
-	if err := r.db.Where("screen_type_name ILIKE ?", name).Delete(&screenType).Error; err != nil {
-		return err
+	result := r.db.Where("screen_type_name ILIKE ?", name).Delete(&screenType)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no screen type with name  %s", name)
 	}
 	return nil
 }
@@ -217,6 +234,9 @@ func (r *repository) UpdateScreenType(ctx context.Context, id int, screenType Sc
 	if result.Error != nil {
 		return result.Error
 	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no screen type with id %d", id)
+	}
 	return nil
 }
 
@@ -244,16 +264,24 @@ func (r *repository) CreateSeatCategory(ctx context.Context, seatCategory SeatCa
 
 func (r *repository) DeleteSeatCategoryByID(ctx context.Context, id int) error {
 	seatCategory := &SeatCategory{}
-	if err := r.db.Where("id = ?", id).Delete(&seatCategory).Error; err != nil {
-		return err
+	result := r.db.Where("id = ?", id).Delete(&seatCategory)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no seat category with id %d", id)
 	}
 	return nil
 }
 
 func (r *repository) DeleteSeatCategoryByName(ctx context.Context, name string) error {
 	seatCategory := &SeatCategory{}
-	if err := r.db.Where("seat_category_name ILIKE ?", name).Delete(&seatCategory).Error; err != nil {
-		return err
+	result := r.db.Where("seat_category_name ILIKE ?", name).Delete(&seatCategory)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no seat category with name %s", name)
 	}
 	return nil
 }
@@ -288,13 +316,16 @@ func (r *repository) UpdateSeatCategory(ctx context.Context, id int, seatCategor
 	if result.Error != nil {
 		return result.Error
 	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no seat category with id %d", id)
+	}
 	return nil
 }
 
 // Theater
 func (r *repository) FindTheaterByNameAndOwnerId(ctx context.Context, theaterName string, theaterOwnerID uint) (*Theater, error) {
 	theater := &Theater{}
-	res := r.db.Where("name ILIKE ? AND owner_id = ?", theaterName, theaterOwnerID).First(theater)
+	res := r.db.Where("name ILIKE ? AND location ILIKE ? AND owner_id = ?", theaterName, theaterOwnerID).First(theater)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
 			return nil, gorm.ErrRecordNotFound
@@ -335,9 +366,9 @@ func (r *repository) GetTheaterByID(ctx context.Context, id int) (*Theater, erro
 	return &theater, nil
 }
 
-func (r *repository) GetTheaterByName(ctx context.Context, name string) (*Theater, error) {
-	theater := &Theater{}
-	if err := r.db.Where("name ILIKE ?", name).First(&theater).Error; err != nil {
+func (r *repository) GetTheaterByName(ctx context.Context, name string) ([]Theater, error) {
+	theater := []Theater{}
+	if err := r.db.Where("name ILIKE ?", name).Find(&theater).Error; err != nil {
 		return nil, err
 	}
 	return theater, nil

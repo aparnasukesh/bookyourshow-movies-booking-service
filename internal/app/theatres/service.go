@@ -42,7 +42,7 @@ type Service interface {
 	DeleteTheaterByID(ctx context.Context, id int) error
 	DeleteTheaterByName(ctx context.Context, name string) error
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
-	GetTheaterByName(ctx context.Context, name string) (*Theater, error)
+	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
 	//Theater screen
@@ -289,12 +289,12 @@ func (s *service) GetTheaterByID(ctx context.Context, id int) (*Theater, error) 
 	return theater, nil
 }
 
-func (s *service) GetTheaterByName(ctx context.Context, name string) (*Theater, error) {
-	theater, err := s.repo.GetTheaterByName(ctx, name)
+func (s *service) GetTheaterByName(ctx context.Context, name string) ([]Theater, error) {
+	theaters, err := s.repo.GetTheaterByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	return theater, nil
+	return theaters, nil
 }
 
 func (s *service) UpdateTheater(ctx context.Context, id int, theater Theater) error {

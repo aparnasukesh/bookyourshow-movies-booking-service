@@ -2,6 +2,7 @@ package movies
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -46,8 +47,12 @@ func (r *repository) CreateMovie(ctx context.Context, movie Movie) (int, error) 
 }
 func (r *repository) DeleteMovie(ctx context.Context, movieId int) error {
 	movie := Movie{}
-	if err := r.db.Where("id=?", movieId).Delete(&movie).Error; err != nil {
-		return err
+	result := r.db.Where("id=?", movieId).Delete(&movie)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no movie found with ID %d", movieId)
 	}
 	return nil
 }

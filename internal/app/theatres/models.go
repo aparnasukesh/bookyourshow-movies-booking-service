@@ -11,7 +11,10 @@ import (
 type Theater struct {
 	gorm.Model
 	Name            string          `json:"name"`
-	Location        string          `json:"location"`
+	Place           string          `json:"place"`
+	City            string          `json:"city"`
+	District        string          `json:"district"`
+	State           string          `json:"state"`
 	OwnerID         uint            `json:"owner_id"`
 	NumberOfScreens int             `json:"number_of_screens"`
 	TheaterTypeID   int             `json:"theater_type_id"`
@@ -19,7 +22,6 @@ type Theater struct {
 	TheaterScreens  []TheaterScreen `gorm:"foreignKey:TheaterID"`
 	MovieSchedules  []MovieSchedule `gorm:"foreignKey:TheaterID"`
 }
-
 type TheaterType struct {
 	gorm.Model
 	TheaterTypeName string    `json:"theater_type_name"`
@@ -66,18 +68,18 @@ type MovieSchedule struct {
 
 type SeatCategory struct {
 	gorm.Model
-	SeatCategoryName  string  `json:"seat_category_name"`
-	SeatCategoryPrice float64 `json:"seat_category_price"`
-	Seats             []Seat  `gorm:"foreignKey:SeatCategoryID"`
+	SeatCategoryName string `json:"seat_category_name"`
+	Seats            []Seat `gorm:"foreignKey:SeatCategoryID"`
 }
 
 type Seat struct {
 	gorm.Model
-	ScreenID       int           `json:"screen_id"`
-	SeatNumber     string        `json:"seat_number"`
-	Row            string        `json:"row"`
-	Column         int           `json:"column"`
-	SeatCategoryID int           `json:"seat_category_id"`
-	TheaterScreen  TheaterScreen `gorm:"foreignKey:ScreenID"`
-	SeatCategory   SeatCategory  `gorm:"foreignKey:SeatCategoryID"`
+	ScreenID          int           `json:"screen_id"`
+	SeatNumber        string        `json:"seat_number"`
+	Row               string        `json:"row"`
+	Column            int           `json:"column"`
+	SeatCategoryID    int           `json:"seat_category_id"`
+	SeatCategoryPrice float64       `json:"seat_category_price"`
+	TheaterScreen     TheaterScreen `gorm:"foreignKey:ScreenID"`
+	SeatCategory      SeatCategory  `gorm:"foreignKey:SeatCategoryID"`
 }
