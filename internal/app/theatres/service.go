@@ -3,6 +3,7 @@ package theatres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -119,6 +120,9 @@ func (s *service) ListTheaterTypes(ctx context.Context) ([]TheaterType, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(theaterTypes) < 1 {
+		return nil, errors.New("theater types are not found")
+	}
 	return theaterTypes, nil
 }
 
@@ -179,6 +183,9 @@ func (s *service) ListScreenTypes(ctx context.Context) ([]ScreenType, error) {
 	screenTypes, err := s.repo.ListScreenTypes(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if len(screenTypes) < 1 {
+		return nil, errors.New("no screen types found")
 	}
 	return screenTypes, nil
 }
@@ -249,12 +256,43 @@ func (s *service) ListSeatCategories(ctx context.Context) ([]SeatCategory, error
 	if err != nil {
 		return nil, err
 	}
+	if len(seatCategories) < 1 {
+		return nil, errors.New("no seat categories found")
+	}
 	return seatCategories, nil
 }
 
 // Theater
 func (s *service) AddTheater(ctx context.Context, theater Theater) error {
-	res, err := s.repo.FindTheaterByNameAndOwnerId(ctx, theater.Name, theater.OwnerID)
+	stateCount, err := s.repo.CountTheatersByOwnerAndState(ctx, theater.OwnerID, theater.State)
+	if err != nil {
+		return fmt.Errorf("failed to count theaters for owner in the state: %w", err)
+	}
+	if MaxTheatersPerOwnerInState <= stateCount {
+		return errors.New("the owner has reached the maximum limit of theaters in this state")
+	}
+	districtCount, err := s.repo.CountTheatersByOwnerAndDistrict(ctx, theater.OwnerID, theater.State)
+	if err != nil {
+		return fmt.Errorf("failed to count theaters for owner in the state: %w", err)
+	}
+	if MaxTheatersPerOwnerInDistrict <= districtCount {
+		return errors.New("the owner has reached the maximum limit of theaters in this district")
+	}
+	cityCount, err := s.repo.CountTheatersByOwnerAndCity(ctx, theater.OwnerID, theater.City)
+	if err != nil {
+		return fmt.Errorf("failed to count theaters for owner in the city: %w", err)
+	}
+	if MaxTheatersPerOwnerInCity <= cityCount {
+		return errors.New("the owner has reached the maximum limit of theaters in this city")
+	}
+	placeCount, err := s.repo.CountTheatersByOwnerAndPlace(ctx, theater.OwnerID, theater.Place)
+	if err != nil {
+		return fmt.Errorf("failed to count theaters for owner in the place: %w", err)
+	}
+	if MaxTheatersPerOwnerInPlace <= placeCount {
+		return errors.New("the owner has reached the maximum limit of theaters in this place")
+	}
+	res, err := s.repo.FindTheaterByNamePlaceAndOwnerId(ctx, theater.Name, theater.Place, theater.OwnerID)
 	if res != nil && err == nil {
 		return errors.New("theater already exists")
 	}
@@ -294,6 +332,9 @@ func (s *service) GetTheaterByName(ctx context.Context, name string) ([]Theater,
 	if err != nil {
 		return nil, err
 	}
+	if len(theaters) < 1 {
+		return nil, fmt.Errorf("no theaters with name %s", name)
+	}
 	return theaters, nil
 }
 
@@ -310,17 +351,37 @@ func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(theaters) < 1 {
+		return nil, errors.New("no theaters found")
+	}
 	return theaters, nil
 }
 
 // Theater Screens
 func (s *service) AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error {
+	theater, err := s.repo.GetTheaterByID(ctx, theaterScreen.TheaterID)
+	if theater == nil && err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("theater not exist with theater id %d", theaterScreen.TheaterID)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	screen, err := s.repo.GetScreenTypeByID(ctx, theaterScreen.ScreenTypeID)
+	if screen == nil && err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("sceen type not exist with screen type id %d", theaterScreen.ScreenTypeID)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
 	res, err := s.repo.FindTheaterScreenByTheaterIDAndScreenNumber(ctx, theaterScreen.TheaterID, theaterScreen.ScreenNumber)
 	if res != nil && err == nil {
 		return errors.New("theater screen already exists")
 	}
 	if err != gorm.ErrRecordNotFound {
 		return err
+	}
+	if MaxScreenPerTheater < theaterScreen.ScreenNumber {
+		return errors.New("the theater has reached the maximum screen limit")
 	}
 	if err := s.repo.CreateTheaterScreen(ctx, theaterScreen); err != nil {
 		return err
@@ -370,6 +431,9 @@ func (s *service) ListTheaterScreens(ctx context.Context, theaterId int) ([]Thea
 	theaterScreens, err := s.repo.ListTheaterScreens(ctx, theaterId)
 	if err != nil {
 		return nil, err
+	}
+	if len(theaterScreens) < 1 {
+		return nil, errors.New("no theater screens found")
 	}
 	return theaterScreens, nil
 }
@@ -432,6 +496,9 @@ func (s *service) ListShowtimes(ctx context.Context, movieID int) ([]Showtime, e
 	showtimes, err := s.repo.ListShowtimes(ctx, movieID)
 	if err != nil {
 		return nil, err
+	}
+	if len(showtimes) < 1 {
+		return nil, errors.New("no showtimes found")
 	}
 	return showtimes, nil
 }

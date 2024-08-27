@@ -2,7 +2,6 @@ package theatres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/aparnasukesh/inter-communication/movie_booking"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -302,6 +301,9 @@ func (h *GrpcHandler) AddTheater(ctx context.Context, req *movie_booking.AddThea
 	if err := h.svc.AddTheater(ctx, Theater{
 		Name:            req.Name,
 		Place:           req.Place,
+		City:            req.City,
+		District:        req.District,
+		State:           req.State,
 		OwnerID:         uint(req.OwnerId),
 		NumberOfScreens: int(req.NumberOfScreens),
 		TheaterTypeID:   int(req.TheaterTypeId),
@@ -347,7 +349,7 @@ func (h *GrpcHandler) GetTheaterByID(ctx context.Context, req *movie_booking.Get
 func (h *GrpcHandler) GetTheaterByName(ctx context.Context, req *movie_booking.GetTheaterByNameRequest) (*movie_booking.GetTheaterByNameResponse, error) {
 	theaters, err := h.svc.GetTheaterByName(ctx, req.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get theaters by name: %w", err)
+		return nil, err
 	}
 
 	var theaterResponses []*movie_booking.Theater
@@ -417,7 +419,7 @@ func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListT
 // Theater - Screen
 func (h *GrpcHandler) AddTheaterScreen(ctx context.Context, req *movie_booking.AddTheaterScreenRequest) (*movie_booking.AddTheaterScreenResponse, error) {
 	if err := h.svc.AddTheaterScreen(ctx, TheaterScreen{
-		TheaterID:    int(req.TheaterScreen.ID),
+		TheaterID:    int(req.TheaterScreen.TheaterID),
 		ScreenNumber: int(req.TheaterScreen.ScreenNumber),
 		SeatCapacity: int(req.TheaterScreen.SeatCapacity),
 		ScreenTypeID: int(req.TheaterScreen.ScreenTypeID),

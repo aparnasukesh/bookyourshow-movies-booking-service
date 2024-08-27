@@ -62,6 +62,9 @@ func (s *service) ListMovies(ctx context.Context) ([]Movie, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(movies) < 1 {
+		return nil, errors.New("no movies found")
+	}
 	return movies, nil
 }
 
