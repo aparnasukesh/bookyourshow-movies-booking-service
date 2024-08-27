@@ -25,7 +25,7 @@ func InitResources(cfg config.Config) (func() error, error) {
 
 	// Theatres Module initialization
 	repo := theatres.NewRepository(db)
-	service := theatres.NewService(repo)
+	service := theatres.NewService(repo, movieRepo)
 	theatresGrpcHandler := theatres.NewGrpcHandler(service)
 
 	// Server initialization

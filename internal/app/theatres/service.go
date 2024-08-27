@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"gorm.io/gorm"
 )
 
 type service struct {
-	repo Repository
+	repo      Repository
+	movieRepo movies.Repository
 }
 
 type Service interface {
@@ -64,9 +66,10 @@ type Service interface {
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 }
 
-func NewService(repo Repository) Service {
+func NewService(repo Repository, movieRepo movies.Repository) Service {
 	return &service{
-		repo: repo,
+		repo:      repo,
+		movieRepo: movieRepo,
 	}
 }
 
@@ -440,6 +443,20 @@ func (s *service) ListTheaterScreens(ctx context.Context, theaterId int) ([]Thea
 
 // Showtimes
 func (s *service) AddShowtime(ctx context.Context, showtime Showtime) error {
+	movie, err := s.movieRepo.GetMovieDetailsById(ctx, showtime.MovieID)
+	if movie == nil && err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("movie not exist with id %d", showtime.MovieID)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	theaterScreen, err := s.repo.GetTheaterScreenByID(ctx, showtime.ScreenID)
+	if theaterScreen == nil && err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("screen not exist with id %d", showtime.ScreenID)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
 	res, err := s.repo.FindShowtimeByDetails(ctx, showtime.MovieID, showtime.ScreenID, showtime.ShowDate, showtime.ShowTime)
 	if res != nil && err == nil {
 		return errors.New("showtime already exists")

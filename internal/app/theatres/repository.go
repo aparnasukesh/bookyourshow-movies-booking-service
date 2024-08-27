@@ -549,16 +549,24 @@ func (r *repository) CreateShowtime(ctx context.Context, showtime Showtime) erro
 
 func (r *repository) DeleteShowtimeByID(ctx context.Context, id int) error {
 	showtime := &Showtime{}
-	if err := r.db.Where("id = ?", id).Delete(&showtime).Error; err != nil {
-		return err
+	result := r.db.Where("id = ?", id).Delete(&showtime)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
 	return nil
 }
 
 func (r *repository) DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error {
 	showtime := &Showtime{}
-	if err := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).Delete(&showtime).Error; err != nil {
-		return err
+	result := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).Delete(&showtime)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
 	return nil
 }
@@ -592,6 +600,9 @@ func (r *repository) UpdateShowtime(ctx context.Context, id int, showtime Showti
 	result := r.db.Model(&Showtime{}).Where("id = ?", id).Updates(showtime)
 	if result.Error != nil {
 		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
 	}
 	return nil
 }
