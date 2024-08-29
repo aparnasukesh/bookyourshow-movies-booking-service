@@ -43,7 +43,7 @@ type Repository interface {
 	CreateTheater(ctx context.Context, theater Theater) error
 	DeleteTheaterByID(ctx context.Context, id int) error
 	DeleteTheaterByName(ctx context.Context, name string) error
-	FindTheaterByNamePlaceAndOwnerId(ctx context.Context, theaterName string, placeName string, theaterOwnerID uint) (*Theater, error)
+	FindTheaterByNamePlaceAndCity(ctx context.Context, theaterName string, placeName string, cityName string) (*Theater, error)
 	CountTheatersByOwnerAndState(ctx context.Context, ownerId uint, state string) (int, error)
 	CountTheatersByOwnerAndDistrict(ctx context.Context, ownerId uint, district string) (int, error)
 	CountTheatersByOwnerAndCity(ctx context.Context, ownerId uint, city string) (int, error)
@@ -327,9 +327,9 @@ func (r *repository) UpdateSeatCategory(ctx context.Context, id int, seatCategor
 }
 
 // Theater
-func (r *repository) FindTheaterByNamePlaceAndOwnerId(ctx context.Context, theaterName string, placeName string, theaterOwnerID uint) (*Theater, error) {
+func (r *repository) FindTheaterByNamePlaceAndCity(ctx context.Context, theaterName string, placeName string, cityName string) (*Theater, error) {
 	theater := &Theater{}
-	res := r.db.Where("name ILIKE ? AND place ILIKE ? AND owner_id = ?", theaterName, placeName, theaterOwnerID).First(theater)
+	res := r.db.Unscoped().Where("name ILIKE ? AND place ILIKE ? AND city ILIKE ?", theaterName, placeName, cityName).First(theater)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
 			return nil, gorm.ErrRecordNotFound
@@ -379,7 +379,6 @@ func (r *repository) CountTheatersByOwnerAndPlace(ctx context.Context, ownerId u
 	}
 	return int(count), nil
 }
-
 func (r *repository) CreateTheater(ctx context.Context, theater Theater) error {
 	if err := r.db.Create(&theater).Error; err != nil {
 		return err

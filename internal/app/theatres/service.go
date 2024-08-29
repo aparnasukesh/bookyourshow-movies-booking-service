@@ -295,16 +295,28 @@ func (s *service) AddTheater(ctx context.Context, theater Theater) error {
 	if MaxTheatersPerOwnerInPlace <= placeCount {
 		return errors.New("the owner has reached the maximum limit of theaters in this place")
 	}
-	res, err := s.repo.FindTheaterByNamePlaceAndOwnerId(ctx, theater.Name, theater.Place, theater.OwnerID)
-	if res != nil && err == nil {
+	res, err := s.repo.FindTheaterByNamePlaceAndCity(ctx, theater.Name, theater.Place, theater.City)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+
+	if res != nil && res.DeletedAt.Valid {
+		res.DeletedAt = gorm.DeletedAt{}
+		res.NumberOfScreens = theater.NumberOfScreens
+		res.TheaterTypeID = theater.TheaterTypeID
+		if err := s.repo.UpdateTheater(ctx, int(res.ID), *res); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err == gorm.ErrRecordNotFound {
+		if err := s.repo.CreateTheater(ctx, theater); err != nil {
+			return err
+		}
+	} else {
 		return errors.New("theater already exists")
 	}
-	if err != gorm.ErrRecordNotFound {
-		return err
-	}
-	if err := s.repo.CreateTheater(ctx, theater); err != nil {
-		return err
-	}
+
 	return nil
 }
 
