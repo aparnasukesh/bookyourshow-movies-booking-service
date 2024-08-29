@@ -51,7 +51,9 @@ type Repository interface {
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
 	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
+	UpdateTheaterWithoutID(ctx context.Context, theater *Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
+	FindActiveTheaterByNameAndPlace(ctx context.Context, name string, place string) (*Theater, error)
 	//Theater screen
 	CreateTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
@@ -329,7 +331,7 @@ func (r *repository) UpdateSeatCategory(ctx context.Context, id int, seatCategor
 // Theater
 func (r *repository) FindTheaterByNamePlaceAndCity(ctx context.Context, theaterName string, placeName string, cityName string) (*Theater, error) {
 	theater := &Theater{}
-	res := r.db.Unscoped().Where("name ILIKE ? AND place ILIKE ? AND city ILIKE ?", theaterName, placeName, cityName).First(theater)
+	res := r.db.Unscoped().Where("name ILIKE ? AND place ILIKE ? AND city ILIKE ?", theaterName, placeName, cityName).First(&theater)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
 			return nil, gorm.ErrRecordNotFound
@@ -337,6 +339,9 @@ func (r *repository) FindTheaterByNamePlaceAndCity(ctx context.Context, theaterN
 		return nil, res.Error
 	}
 	return theater, nil
+}
+func (r *repository) FindActiveTheaterByNameAndPlace(ctx context.Context, name string, place string) (*Theater, error) {
+
 }
 func (r *repository) CountTheatersByOwnerAndState(ctx context.Context, ownerId uint, state string) (int, error) {
 	var count int64
@@ -433,7 +438,12 @@ func (r *repository) ListTheaters(ctx context.Context) ([]Theater, error) {
 	}
 	return theaters, nil
 }
-
+func (r *repository) UpdateTheaterWithoutID(ctx context.Context, theater *Theater) error {
+	if err := r.db.Save(theater).Error; err != nil {
+		return err
+	}
+	return nil
+}
 func (r *repository) UpdateTheater(ctx context.Context, id int, theater Theater) error {
 	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
 	result := r.db.Model(&Theater{}).Where("id = ?", id).Updates(theater)

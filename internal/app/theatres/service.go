@@ -46,7 +46,8 @@ type Service interface {
 	DeleteTheaterByName(ctx context.Context, name string) error
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
 	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
-	UpdateTheater(ctx context.Context, id int, theater Theater) error
+	//UpdateTheater(ctx context.Context, id int, theater Theater) error
+	UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
 	//Theater screen
 	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
@@ -304,7 +305,7 @@ func (s *service) AddTheater(ctx context.Context, theater Theater) error {
 		res.DeletedAt = gorm.DeletedAt{}
 		res.NumberOfScreens = theater.NumberOfScreens
 		res.TheaterTypeID = theater.TheaterTypeID
-		if err := s.repo.UpdateTheater(ctx, int(res.ID), *res); err != nil {
+		if err := s.repo.UpdateTheaterWithoutID(ctx, res); err != nil {
 			return err
 		}
 		return nil
@@ -353,14 +354,115 @@ func (s *service) GetTheaterByName(ctx context.Context, name string) ([]Theater,
 	return theaters, nil
 }
 
-func (s *service) UpdateTheater(ctx context.Context, id int, theater Theater) error {
-	err := s.repo.UpdateTheater(ctx, id, theater)
+//	func (s *service) UpdateTheater(ctx context.Context, id int, theater Theater) error {
+//		err := s.repo.UpdateTheater(ctx, id, theater)
+//		if err != nil {
+//			return err
+//		}
+//		return nil
+//	}
+//
+// =====================================================================================
+func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error {
+	// Fetch the existing theater record
+	theater, err := s.repo.GetTheaterByID(ctx, int(theaterID))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find theater: %w", err)
 	}
+
+	// Check and apply updates dynamically
+	if input.Name != nil && input.Place != nil {
+		existingTheater, err := s.repo.FindActiveTheaterByNameAndPlace(ctx, *input.Name, *input.Place)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if existingTheater != nil && existingTheater.ID != theater.ID {
+			return errors.New("another theater with the same name and place already exists")
+		}
+	}
+
+	if input.State != nil {
+		stateCount, err := s.repo.CountTheatersByOwnerAndState(ctx, theater.OwnerID, *input.State)
+		if err != nil {
+			return fmt.Errorf("failed to count theaters for owner in the state: %w", err)
+		}
+		if MaxTheatersPerOwnerInState <= stateCount {
+			return errors.New("the owner has reached the maximum limit of theaters in this state")
+		}
+	}
+
+	if input.District != nil {
+		districtCount, err := s.repo.CountTheatersByOwnerAndDistrict(ctx, theater.OwnerID, *input.District)
+		if err != nil {
+			return fmt.Errorf("failed to count theaters for owner in the district: %w", err)
+		}
+		if MaxTheatersPerOwnerInDistrict <= districtCount {
+			return errors.New("the owner has reached the maximum limit of theaters in this district")
+		}
+	}
+
+	if input.City != nil {
+		cityCount, err := s.repo.CountTheatersByOwnerAndCity(ctx, theater.OwnerID, *input.City)
+		if err != nil {
+			return fmt.Errorf("failed to count theaters for owner in the city: %w", err)
+		}
+		if MaxTheatersPerOwnerInCity <= cityCount {
+			return errors.New("the owner has reached the maximum limit of theaters in this city")
+		}
+	}
+
+	if input.Place != nil {
+		placeCount, err := s.repo.CountTheatersByOwnerAndPlace(ctx, theater.OwnerID, *input.Place)
+		if err != nil {
+			return fmt.Errorf("failed to count theaters for owner in the place: %w", err)
+		}
+		if MaxTheatersPerOwnerInPlace <= placeCount {
+			return errors.New("the owner has reached the maximum limit of theaters in this place")
+		}
+	}
+
+	if input.TheaterTypeID != nil {
+		theaterType, err := s.repo.GetTheaterTypeByID(ctx, *input.TheaterTypeID)
+		if err != nil {
+			return fmt.Errorf("invalid theater type: %w", err)
+		}
+		theater.TheaterTypeID = *input.TheaterTypeID
+		theater.TheaterType = *theaterType
+	}
+
+	if input.NumberOfScreens != nil {
+		if *input.NumberOfScreens > MaxScreenPerTheater {
+			return errors.New("the number of screens exceeds the allowed limit for this theater")
+		}
+		theater.NumberOfScreens = *input.NumberOfScreens
+	}
+
+	// Update the fields if they are provided in the input
+	if input.Name != nil {
+		theater.Name = *input.Name
+	}
+	if input.Place != nil {
+		theater.Place = *input.Place
+	}
+	if input.City != nil {
+		theater.City = *input.City
+	}
+	if input.District != nil {
+		theater.District = *input.District
+	}
+	if input.State != nil {
+		theater.State = *input.State
+	}
+
+	// Save the updated theater record
+	if err := s.repo.UpdateTheaterWithoutID(ctx, theater); err != nil {
+		return fmt.Errorf("failed to update theater: %w", err)
+	}
+
 	return nil
 }
 
+// =====================================================================================
 func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 	theaters, err := s.repo.ListTheaters(ctx)
 	if err != nil {
