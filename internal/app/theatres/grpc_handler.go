@@ -373,27 +373,16 @@ func (h *GrpcHandler) GetTheaterByName(ctx context.Context, req *movie_booking.G
 }
 
 func (h *GrpcHandler) UpdateTheater(ctx context.Context, req *movie_booking.UpdateTheaterRequest) (*movie_booking.UpdateTheaterResponse, error) {
-	var ownerID uint
-	if req.OwnerId != 0 {
-		ownerID = uint(req.OwnerId)
-	}
-	var numberOfScreens int
-	if req.NumberOfScreens != 0 {
-		numberOfScreens = int(req.NumberOfScreens)
-	}
-	var theaterTypeID int
-	if req.TheaterTypeId != 0 {
-		theaterTypeID = int(req.TheaterTypeId)
-	}
+
 	err := h.svc.UpdateTheater(ctx, uint(req.TheaterId), TheaterUpdateInput{
-		Name:            &req.Name,
-		Place:           &req.Place,
-		City:            &req.City,
-		District:        &req.District,
-		State:           &req.State,
-		OwnerID:         &ownerID,
-		NumberOfScreens: &numberOfScreens,
-		TheaterTypeID:   &theaterTypeID,
+		Name:            req.Name,
+		Place:           req.Place,
+		City:            req.City,
+		District:        req.District,
+		State:           req.State,
+		OwnerID:         uint(req.OwnerId),
+		NumberOfScreens: int(req.NumberOfScreens),
+		TheaterTypeID:   int(req.TheaterTypeId),
 	})
 	if err != nil {
 		return nil, err

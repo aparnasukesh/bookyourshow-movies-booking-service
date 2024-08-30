@@ -23,14 +23,14 @@ type Theater struct {
 	MovieSchedules  []MovieSchedule `gorm:"foreignKey:TheaterID"`
 }
 type TheaterUpdateInput struct {
-	Name            *string `json:"name,omitempty"`
-	Place           *string `json:"place,omitempty"`
-	City            *string `json:"city,omitempty"`
-	District        *string `json:"district,omitempty"`
-	State           *string `json:"state,omitempty"`
-	OwnerID         *uint   `json:"owner_id,omitempty"`
-	NumberOfScreens *int    `json:"number_of_screens,omitempty"`
-	TheaterTypeID   *int    `json:"theater_type_id,omitempty"`
+	Name            string `json:"name,omitempty"`
+	Place           string `json:"place,omitempty"`
+	City            string `json:"city,omitempty"`
+	District        string `json:"district,omitempty"`
+	State           string `json:"state,omitempty"`
+	OwnerID         uint   `json:"owner_id,omitempty"`
+	NumberOfScreens int    `json:"number_of_screens,omitempty"`
+	TheaterTypeID   int    `json:"theater_type_id,omitempty"`
 }
 type TheaterType struct {
 	gorm.Model

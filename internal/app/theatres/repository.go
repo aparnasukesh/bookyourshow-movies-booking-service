@@ -53,8 +53,7 @@ type Repository interface {
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	UpdateTheaterWithoutID(ctx context.Context, theater *Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
-	FindActiveTheaterByNameAndPlace(ctx context.Context, name string, place string) (*Theater, error)
-	//Theater screen
+	FindActiveTheaterByNamePlaceAndCity(ctx context.Context, name string, place string, city string) (*Theater, error) //Theater screen
 	CreateTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
 	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
@@ -340,8 +339,16 @@ func (r *repository) FindTheaterByNamePlaceAndCity(ctx context.Context, theaterN
 	}
 	return theater, nil
 }
-func (r *repository) FindActiveTheaterByNameAndPlace(ctx context.Context, name string, place string) (*Theater, error) {
-
+func (r *repository) FindActiveTheaterByNamePlaceAndCity(ctx context.Context, name string, place string, city string) (*Theater, error) {
+	theater := &Theater{}
+	res := r.db.Where("name ILIKE ? AND place ILIKE ? AND city ILIKE ?", name, place, city).First(&theater)
+	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, res.Error
+	}
+	return theater, nil
 }
 func (r *repository) CountTheatersByOwnerAndState(ctx context.Context, ownerId uint, state string) (int, error) {
 	var count int64

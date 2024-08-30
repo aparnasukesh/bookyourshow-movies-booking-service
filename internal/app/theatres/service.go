@@ -268,6 +268,10 @@ func (s *service) ListSeatCategories(ctx context.Context) ([]SeatCategory, error
 
 // Theater
 func (s *service) AddTheater(ctx context.Context, theater Theater) error {
+	theaterType, err := s.repo.GetTheaterTypeByID(ctx, theater.TheaterTypeID)
+	if theaterType == nil && err != nil {
+		return fmt.Errorf("theater type not exist with theater-type id %d", theater.TheaterTypeID)
+	}
 	stateCount, err := s.repo.CountTheatersByOwnerAndState(ctx, theater.OwnerID, theater.State)
 	if err != nil {
 		return fmt.Errorf("failed to count theaters for owner in the state: %w", err)
@@ -371,8 +375,9 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 	}
 
 	// Check and apply updates dynamically
-	if input.Name != nil && input.Place != nil {
-		existingTheater, err := s.repo.FindActiveTheaterByNameAndPlace(ctx, *input.Name, *input.Place)
+	fmt.Println("======================================================", input.Place, input.City, input.State)
+	if input.Name != "" && input.Place != "" && input.City != "" {
+		existingTheater, err := s.repo.FindActiveTheaterByNamePlaceAndCity(ctx, input.Name, input.Place, input.City)
 		if err != nil && err != gorm.ErrRecordNotFound {
 			return err
 		}
@@ -381,8 +386,8 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		}
 	}
 
-	if input.State != nil {
-		stateCount, err := s.repo.CountTheatersByOwnerAndState(ctx, theater.OwnerID, *input.State)
+	if input.State != "" {
+		stateCount, err := s.repo.CountTheatersByOwnerAndState(ctx, theater.OwnerID, input.State)
 		if err != nil {
 			return fmt.Errorf("failed to count theaters for owner in the state: %w", err)
 		}
@@ -391,8 +396,8 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		}
 	}
 
-	if input.District != nil {
-		districtCount, err := s.repo.CountTheatersByOwnerAndDistrict(ctx, theater.OwnerID, *input.District)
+	if input.District != "" {
+		districtCount, err := s.repo.CountTheatersByOwnerAndDistrict(ctx, theater.OwnerID, input.District)
 		if err != nil {
 			return fmt.Errorf("failed to count theaters for owner in the district: %w", err)
 		}
@@ -401,8 +406,8 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		}
 	}
 
-	if input.City != nil {
-		cityCount, err := s.repo.CountTheatersByOwnerAndCity(ctx, theater.OwnerID, *input.City)
+	if input.City != "" {
+		cityCount, err := s.repo.CountTheatersByOwnerAndCity(ctx, theater.OwnerID, input.City)
 		if err != nil {
 			return fmt.Errorf("failed to count theaters for owner in the city: %w", err)
 		}
@@ -411,8 +416,8 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		}
 	}
 
-	if input.Place != nil {
-		placeCount, err := s.repo.CountTheatersByOwnerAndPlace(ctx, theater.OwnerID, *input.Place)
+	if input.Place != "" {
+		placeCount, err := s.repo.CountTheatersByOwnerAndPlace(ctx, theater.OwnerID, input.Place)
 		if err != nil {
 			return fmt.Errorf("failed to count theaters for owner in the place: %w", err)
 		}
@@ -420,38 +425,37 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 			return errors.New("the owner has reached the maximum limit of theaters in this place")
 		}
 	}
-
-	if input.TheaterTypeID != nil {
-		theaterType, err := s.repo.GetTheaterTypeByID(ctx, *input.TheaterTypeID)
+	if input.TheaterTypeID != 0 {
+		theaterType, err := s.repo.GetTheaterTypeByID(ctx, input.TheaterTypeID)
 		if err != nil {
 			return fmt.Errorf("invalid theater type: %w", err)
 		}
-		theater.TheaterTypeID = *input.TheaterTypeID
+		theater.TheaterTypeID = input.TheaterTypeID
 		theater.TheaterType = *theaterType
 	}
 
-	if input.NumberOfScreens != nil {
-		if *input.NumberOfScreens > MaxScreenPerTheater {
+	if input.NumberOfScreens != 0 {
+		if input.NumberOfScreens > MaxScreenPerTheater {
 			return errors.New("the number of screens exceeds the allowed limit for this theater")
 		}
-		theater.NumberOfScreens = *input.NumberOfScreens
+		theater.NumberOfScreens = input.NumberOfScreens
 	}
 
 	// Update the fields if they are provided in the input
-	if input.Name != nil {
-		theater.Name = *input.Name
+	if input.Name != "" {
+		theater.Name = input.Name
 	}
-	if input.Place != nil {
-		theater.Place = *input.Place
+	if input.Place != "" {
+		theater.Place = input.Place
 	}
-	if input.City != nil {
-		theater.City = *input.City
+	if input.City != "" {
+		theater.City = input.City
 	}
-	if input.District != nil {
-		theater.District = *input.District
+	if input.District != "" {
+		theater.District = input.District
 	}
-	if input.State != nil {
-		theater.State = *input.State
+	if input.State != "" {
+		theater.State = input.State
 	}
 
 	// Save the updated theater record
