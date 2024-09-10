@@ -3,7 +3,7 @@ module github.com/aparnasukesh/movies-booking-svc
 go 1.21.1
 
 require (
-	github.com/aparnasukesh/inter-communication v1.3.1
+	github.com/aparnasukesh/inter-communication v1.4.2
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.64.0

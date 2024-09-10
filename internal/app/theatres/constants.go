@@ -5,6 +5,5 @@ const (
 	MaxTheatersPerOwnerInPlace    = 2
 	MaxTheatersPerOwnerInDistrict = 5
 	MaxTheatersPerOwnerInState    = 7
-
-	MaxScreenPerTheater = 5
+	MaxScreenPerTheater           = 5
 )

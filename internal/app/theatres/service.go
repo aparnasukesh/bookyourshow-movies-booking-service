@@ -46,7 +46,6 @@ type Service interface {
 	DeleteTheaterByName(ctx context.Context, name string) error
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
 	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
-	//UpdateTheater(ctx context.Context, id int, theater Theater) error
 	UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
 	//Theater screen
@@ -65,6 +64,19 @@ type Service interface {
 	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
 	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
+	// Movie Schedule
+	AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error
+	UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule) error
+	GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule, error)
+	GetMovieScheduleByMovieID(ctx context.Context, id int) ([]MovieSchedule, error)
+	GetMovieScheduleByTheaterID(ctx context.Context, id int) ([]MovieSchedule, error)
+	GetMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) ([]MovieSchedule, error)
+	GetMovieScheduleByMovieIdAndShowTimeId(ctx context.Context, movieId, showTimeId int) ([]MovieSchedule, error)
+	GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, theaterId, showTimeId int) ([]MovieSchedule, error)
+	GetMovieScheduleByID(ctx context.Context, id int) (*MovieSchedule, error)
+	DeleteMovieScheduleById(ctx context.Context, id int) error
+	DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) error
+	DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId, theaterId, showTimeId int) error
 }
 
 func NewService(repo Repository, movieRepo movies.Repository) Service {
@@ -72,6 +84,196 @@ func NewService(repo Repository, movieRepo movies.Repository) Service {
 		repo:      repo,
 		movieRepo: movieRepo,
 	}
+}
+
+// Movie Schedule
+func (s *service) AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error {
+	movie, err := s.movieRepo.GetMovieDetailsById(ctx, movieSchedule.MovieID)
+	if err != nil && movie == nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("movie with ID %d does not exist", movieSchedule.MovieID)
+		}
+		return fmt.Errorf("failed to fetch movie details: %w", err)
+	}
+	theater, err := s.repo.GetTheaterByID(ctx, movieSchedule.TheaterID)
+	if err != nil && theater == nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("theater with ID %d does not exist", movieSchedule.TheaterID)
+		}
+		return fmt.Errorf("failed to fetch theater details: %w", err)
+	}
+	showtime, err := s.repo.GetShowtimeByID(ctx, movieSchedule.ShowtimeID)
+	if err != nil && showtime == nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("showtime with ID %d does not exist", movieSchedule.ShowtimeID)
+		}
+		return fmt.Errorf("failed to fetch showtime details: %w", err)
+	}
+	existingSchedule, err := s.repo.GetMovieScheduleByDetails(ctx, movieSchedule.MovieID, movieSchedule.TheaterID, movieSchedule.ShowtimeID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("failed to check for existing schedule: %w", err)
+	}
+	if existingSchedule != nil {
+		return fmt.Errorf("movie schedule already exists for movie ID %d, theater ID %d, and showtime ID %d", movieSchedule.MovieID, movieSchedule.TheaterID, movieSchedule.ShowtimeID)
+	}
+
+	if err := s.repo.CreateMovieSchedule(ctx, movieSchedule); err != nil {
+		return fmt.Errorf("failed to create movie schedule: %w", err)
+	}
+
+	return nil
+}
+
+func (s *service) DeleteMovieScheduleById(ctx context.Context, id int) error {
+	err := s.repo.DeleteMovieScheduleById(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId int, theaterId int) error {
+	err := s.repo.DeleteMovieScheduleByMovieIdAndTheaterId(ctx, movieId, theaterId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId int, theaterId int, showTimeId int) error {
+	if err := s.repo.DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx, movieId, theaterId, showTimeId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetAllMovieSchedules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedule found")
+	}
+	return movieSchedules, nil
+}
+
+func (s *service) GetMovieScheduleByID(ctx context.Context, id int) (*MovieSchedule, error) {
+	movieSchedule, err := s.repo.GetMovieScheduleByID(ctx, id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("no movie schedule found with id %d", id)
+	}
+	return movieSchedule, nil
+}
+
+func (s *service) GetMovieScheduleByMovieID(ctx context.Context, movieId int) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetMovieScheduleByMovieID(ctx, movieId)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedules found for movie with movie id %d", movieId)
+	}
+	return movieSchedules, nil
+}
+
+func (s *service) GetMovieScheduleByMovieIdAndShowTimeId(ctx context.Context, movieId int, showTimeId int) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetMovieScheduleByMovieIdAndShowTimeId(ctx, movieId, showTimeId)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedules found for movie with movie id %d and showtime id %d", movieId, showTimeId)
+	}
+	return movieSchedules, nil
+}
+
+func (s *service) GetMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId int, theaterId int) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetMovieScheduleByMovieIdAndTheaterId(ctx, movieId, theaterId)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedules found for movie with movie id %d and theater id %d", movieId, theaterId)
+	}
+	return movieSchedules, nil
+}
+
+func (s *service) GetMovieScheduleByTheaterID(ctx context.Context, theaterId int) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetMovieScheduleByTheaterID(ctx, theaterId)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedules found with theater id %d", theaterId)
+	}
+	return movieSchedules, nil
+}
+
+func (s *service) GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, theaterId int, showTimeId int) ([]MovieSchedule, error) {
+	movieSchedules, err := s.repo.GetMovieScheduleByTheaterIdAndShowTimeId(ctx, theaterId, showTimeId)
+	if err != nil {
+		return nil, err
+	}
+	if len(movieSchedules) < 1 {
+		return nil, fmt.Errorf("no movie schedules found with theater id %d and showtime id %d", theaterId, showTimeId)
+	}
+	return movieSchedules, nil
+}
+func (s *service) UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule) error {
+	data, err := s.repo.GetMovieScheduleByID(ctx, id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("no movie schedule found with ID %d", id)
+		}
+		return fmt.Errorf("failed to retrieve movie schedule: %w", err)
+	}
+
+	if updateData.MovieID != 0 {
+		if _, err := s.movieRepo.GetMovieDetailsById(ctx, updateData.MovieID); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("movie with ID %d does not exist", updateData.MovieID)
+			}
+			return fmt.Errorf("failed to fetch movie details: %w", err)
+		}
+	}
+
+	if updateData.TheaterID != 0 {
+		if _, err := s.repo.GetTheaterByID(ctx, updateData.TheaterID); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("theater with ID %d does not exist", updateData.TheaterID)
+			}
+			return fmt.Errorf("failed to fetch theater details: %w", err)
+		}
+	}
+
+	if updateData.ShowtimeID != 0 {
+		if _, err := s.repo.GetShowtimeByID(ctx, updateData.ShowtimeID); err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("showtime with ID %d does not exist", updateData.ShowtimeID)
+			}
+			return fmt.Errorf("failed to fetch showtime details: %w", err)
+		}
+	}
+
+	if updateData.MovieID != 0 {
+		data.MovieID = updateData.MovieID
+	}
+	if updateData.TheaterID != 0 {
+		data.TheaterID = updateData.TheaterID
+	}
+	if updateData.ShowtimeID != 0 {
+		data.ShowtimeID = updateData.ShowtimeID
+	}
+
+	if err := s.repo.UpdateMovieScheduleWithoutID(ctx, data); err != nil {
+		return fmt.Errorf("failed to update movie schedule: %w", err)
+	}
+
+	return nil
 }
 
 // Theater-Type
@@ -357,25 +559,12 @@ func (s *service) GetTheaterByName(ctx context.Context, name string) ([]Theater,
 	}
 	return theaters, nil
 }
-
-//	func (s *service) UpdateTheater(ctx context.Context, id int, theater Theater) error {
-//		err := s.repo.UpdateTheater(ctx, id, theater)
-//		if err != nil {
-//			return err
-//		}
-//		return nil
-//	}
-//
-// =====================================================================================
 func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error {
-	// Fetch the existing theater record
 	theater, err := s.repo.GetTheaterByID(ctx, int(theaterID))
 	if err != nil {
 		return fmt.Errorf("failed to find theater: %w", err)
 	}
 
-	// Check and apply updates dynamically
-	fmt.Println("======================================================", input.Place, input.City, input.State)
 	if input.Name != "" && input.Place != "" && input.City != "" {
 		existingTheater, err := s.repo.FindActiveTheaterByNamePlaceAndCity(ctx, input.Name, input.Place, input.City)
 		if err != nil && err != gorm.ErrRecordNotFound {
@@ -441,7 +630,6 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		theater.NumberOfScreens = input.NumberOfScreens
 	}
 
-	// Update the fields if they are provided in the input
 	if input.Name != "" {
 		theater.Name = input.Name
 	}
@@ -458,7 +646,6 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 		theater.State = input.State
 	}
 
-	// Save the updated theater record
 	if err := s.repo.UpdateTheaterWithoutID(ctx, theater); err != nil {
 		return fmt.Errorf("failed to update theater: %w", err)
 	}
@@ -466,7 +653,6 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 	return nil
 }
 
-// =====================================================================================
 func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 	theaters, err := s.repo.ListTheaters(ctx)
 	if err != nil {

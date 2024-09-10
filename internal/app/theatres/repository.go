@@ -71,12 +71,34 @@ type Repository interface {
 	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
+	// Movie Shedule
+	GetMovieScheduleByDetails(ctx context.Context, movieId, theaterId, showtimeId int) (*MovieSchedule, error)
+	CreateMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error
+	DeleteMovieScheduleById(ctx context.Context, id int) error
+	DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) error
+	DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId, theaterId, showTimeId int) error
+	GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule, error)
+	GetMovieScheduleByID(ctx context.Context, id int) (*MovieSchedule, error)
+	GetMovieScheduleByMovieID(ctx context.Context, movieId int) ([]MovieSchedule, error)
+	GetMovieScheduleByMovieIdAndShowTimeId(ctx context.Context, movieId, showTimeId int) ([]MovieSchedule, error)
+	GetMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) ([]MovieSchedule, error)
+	GetMovieScheduleByTheaterID(ctx context.Context, theaterId int) ([]MovieSchedule, error)
+	GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, theaterId, showTimeId int) ([]MovieSchedule, error)
+	UpdateMovieScheduleWithoutID(ctx context.Context, movieschedule *MovieSchedule) error
 }
 
 func NewRepository(db *gorm.DB) Repository {
 	return &repository{
 		db: db,
 	}
+}
+
+// Movie Schedule
+func (r *repository) UpdateMovieScheduleWithoutID(ctx context.Context, movieschedule *MovieSchedule) error {
+	if err := r.db.Save(movieschedule).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // Theater type
