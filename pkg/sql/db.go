@@ -41,6 +41,8 @@ func NewSql(config config.Config) (*gorm.DB, error) {
 	dbInstance.AutoMigrate(&theatres.SeatCategory{})
 	dbInstance.AutoMigrate(&theatres.TheaterScreen{})
 	dbInstance.AutoMigrate(&theatres.Showtime{})
+	dbInstance.AutoMigrate(&theatres.MovieSchedule{})
+	dbInstance.AutoMigrate(&theatres.Seat{})
 
 	log.Println("Successfully auto-migrated all tables.")
 

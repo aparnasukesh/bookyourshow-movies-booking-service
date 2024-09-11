@@ -11,6 +11,7 @@ import (
 type repository struct {
 	db *gorm.DB
 }
+
 type Repository interface {
 	//theater type
 	CreateTheaterType(ctx context.Context, theaterType TheaterType) error
@@ -99,6 +100,114 @@ func (r *repository) UpdateMovieScheduleWithoutID(ctx context.Context, moviesche
 		return err
 	}
 	return nil
+}
+
+func (r *repository) CreateMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error {
+	if err := r.db.Create(&movieSchedule).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) DeleteMovieScheduleById(ctx context.Context, id int) error {
+	movieSchedule := &MovieSchedule{}
+	result := r.db.Where("id =?", id).Delete(&movieSchedule)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no movieschedule with id %d", id)
+	}
+	return nil
+}
+
+func (r *repository) DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId int, theaterId int) error {
+	movieSchedule := &MovieSchedule{}
+	result := r.db.Where("movie_id =? AND theater_id = ?", movieId, theaterId).Delete(&movieSchedule)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no movieschedule with movieid %d and theaterId %d", movieId, theaterId)
+	}
+	return nil
+}
+
+func (r *repository) DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId int, theaterId int, showTimeId int) error {
+	movieSchedule := &MovieSchedule{}
+	result := r.db.Where("movie_id =? AND theater_id = ? AND showtime_id =?", movieId, theaterId, showTimeId).Delete(&movieSchedule)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no movieschedule with movieid %d and theaterId %d and showtime id %d", movieId, theaterId, showTimeId)
+	}
+	return nil
+}
+
+func (r *repository) GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule, error) {
+	movieSchedules := []MovieSchedule{}
+	if err := r.db.Find(&movieSchedules).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedules, nil
+}
+
+func (r *repository) GetMovieScheduleByDetails(ctx context.Context, movieId int, theaterId int, showtimeId int) (*MovieSchedule, error) {
+	movieSchedule := &MovieSchedule{}
+	if err := r.db.Where("movie_id =? AND theater_id =? AND showtime_id =?", movieId, theaterId, showtimeId).First(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByID(ctx context.Context, id int) (*MovieSchedule, error) {
+	movieSchedule := &MovieSchedule{}
+	if err := r.db.Where("id = ?", id).First(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByMovieID(ctx context.Context, movieId int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Where("movie_id = ?", movieId).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByMovieIdAndShowTimeId(ctx context.Context, movieId int, showTimeId int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Where("movie_id = ? AND showtime_id = ?", movieId, showTimeId).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId int, theaterId int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Where("movie_id = ? AND theater_id = ?", movieId, theaterId).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByTheaterID(ctx context.Context, theaterId int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Where("theater_id = ?", theaterId).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
+func (r *repository) GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, theaterId int, showTimeId int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Where("theater_id = ? AND showtime_id = ?", theaterId, showTimeId).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
 }
 
 // Theater type
