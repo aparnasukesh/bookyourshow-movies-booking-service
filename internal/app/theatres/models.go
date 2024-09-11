@@ -93,3 +93,18 @@ type Seat struct {
 	TheaterScreen     TheaterScreen `gorm:"foreignKey:ScreenID"`
 	SeatCategory      SeatCategory  `gorm:"foreignKey:SeatCategoryID"`
 }
+
+type RowSeatCategoryPrice struct {
+	RowStart          string  `json:"row_start"`
+	RowEnd            string  `json:"row_end"`
+	SeatCategoryId    int     `json:"seat_category_id"`
+	SeatCategoryPrice float32 `json:"seat_category_price"`
+}
+
+type CreateSeatsRequest struct {
+	ID           int                    `json:"id"`
+	ScreenId     int                    `json:"screen_id"`
+	TotalRows    int                    `json:"total_rows"`
+	TotalColumns int                    `json:"total_columns"`
+	SeatRequest  []RowSeatCategoryPrice `json:"seat_request"`
+}

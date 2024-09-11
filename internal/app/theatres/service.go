@@ -77,6 +77,13 @@ type Service interface {
 	DeleteMovieScheduleById(ctx context.Context, id int) error
 	DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) error
 	DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId, theaterId, showTimeId int) error
+	// Seats
+	CreateSeats(ctx context.Context, req CreateSeatsRequest) error
+	GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error)
+	GetSeatById(ctx context.Context, id int) (*Seat, error)
+	GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error)
+	DeleteSeatById(ctx context.Context, id int) error
+	DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error
 }
 
 func NewService(repo Repository, movieRepo movies.Repository) Service {
@@ -84,6 +91,113 @@ func NewService(repo Repository, movieRepo movies.Repository) Service {
 		repo:      repo,
 		movieRepo: movieRepo,
 	}
+}
+
+// Seats
+func (s *service) CreateSeats(ctx context.Context, req CreateSeatsRequest) error {
+	_, err := s.repo.GetTheaterScreenByID(ctx, req.ScreenId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("no theater screen found with screen id %d", req.ScreenId)
+		}
+		return err
+	}
+	totalColumns := req.TotalColumns
+	screenID := req.ScreenId
+	seatRequests := req.SeatRequest
+	var seats []Seat
+	for _, category := range seatRequests {
+		_, err := s.repo.GetSeatCategoryByID(ctx, category.SeatCategoryId)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return fmt.Errorf("no seat category found with id %d", category.SeatCategoryId)
+			}
+			return err
+		}
+		for row := category.RowStart[0]; row <= category.RowEnd[0]; row++ {
+			for column := 1; column <= int(totalColumns); column++ {
+				seatNumber := fmt.Sprintf("%c%d", row, column)
+				seat := Seat{
+					ScreenID:          int(screenID),
+					Row:               string(row),
+					Column:            column,
+					SeatNumber:        seatNumber,
+					SeatCategoryID:    int(category.SeatCategoryId),
+					SeatCategoryPrice: float64(category.SeatCategoryPrice),
+				}
+
+				seats = append(seats, seat)
+			}
+		}
+	}
+	for _, seat := range seats {
+		existingSeat, err := s.repo.GetSeatBySeatNumberAndScreenID(ctx, seat.SeatNumber, seat.ScreenID)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if existingSeat != nil && existingSeat.DeletedAt.Valid {
+			existingSeat.DeletedAt = gorm.DeletedAt{}
+			if err := s.repo.UpdateSeatWithoutID(ctx, existingSeat); err != nil {
+				return err
+			}
+		}
+		if existingSeat == nil && err == gorm.ErrRecordNotFound {
+			if err := s.repo.CreateSeat(ctx, seat); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *service) DeleteSeatById(ctx context.Context, id int) error {
+	err := s.repo.DeleteSeatById(ctx, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error {
+	err := s.repo.DeleteSeatBySeatNumberAndScreenId(ctx, screenId, seatNumber)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) GetSeatById(ctx context.Context, id int) (*Seat, error) {
+	seat, err := s.repo.GetSeatById(ctx, id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("no seat found with %d", id)
+	}
+	return seat, nil
+}
+
+func (s *service) GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error) {
+	seat, err := s.repo.GetSeatBySeatNumberAndScreenId(ctx, screenId, seatNumber)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("no seat found with seatnumber %s and screenid %d", seatNumber, screenId)
+	}
+	return seat, nil
+}
+
+func (s *service) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error) {
+	seats, err := s.repo.GetSeatsByScreenId(ctx, screenId)
+	if len(seats) < 1 {
+		return nil, fmt.Errorf("no seats found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return seats, nil
 }
 
 // Movie Schedule

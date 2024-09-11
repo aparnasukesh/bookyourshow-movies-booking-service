@@ -86,12 +86,95 @@ type Repository interface {
 	GetMovieScheduleByTheaterID(ctx context.Context, theaterId int) ([]MovieSchedule, error)
 	GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, theaterId, showTimeId int) ([]MovieSchedule, error)
 	UpdateMovieScheduleWithoutID(ctx context.Context, movieschedule *MovieSchedule) error
+	// Seats
+	GetSeatBySeatNumberAndScreenID(ctx context.Context, seatNumber string, screenId int) (*Seat, error)
+	UpdateSeatWithoutID(ctx context.Context, seat *Seat) error
+	CreateSeat(ctx context.Context, seat Seat) error
+	GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error)
+	GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error)
+	DeleteSeatById(ctx context.Context, id int) error
+	DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error
+	GetSeatById(ctx context.Context, id int) (*Seat, error)
 }
 
 func NewRepository(db *gorm.DB) Repository {
 	return &repository{
 		db: db,
 	}
+}
+
+// Seats
+func (r *repository) DeleteSeatById(ctx context.Context, id int) error {
+	seat := Seat{}
+	result := r.db.Where("id =?", id).Delete(&seat)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no seat found with id %d", id)
+	}
+	return nil
+}
+
+func (r *repository) DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error {
+	seat := Seat{}
+	result := r.db.Where("screen_id =? AND seat_number=?", screenId, seatNumber).Delete(&seat)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no seat found with screenid %d and seatnumber %s", screenId, seatNumber)
+	}
+	return nil
+}
+
+func (r *repository) GetSeatById(ctx context.Context, id int) (*Seat, error) {
+	seat := Seat{}
+	if err := r.db.Where("id = ?", id).First(&seat).Error; err != nil {
+		return nil, err
+	}
+	return &seat, nil
+}
+
+func (r *repository) GetSeatBySeatNumberAndScreenID(ctx context.Context, seatNumber string, screenId int) (*Seat, error) {
+	var seat Seat
+	if err := r.db.Unscoped().Where("seat_number = ? AND screen_id = ?", seatNumber, screenId).First(&seat).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, err
+	}
+	return &seat, nil
+}
+
+func (r *repository) UpdateSeatWithoutID(ctx context.Context, seat *Seat) error {
+	if err := r.db.Save(seat).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) CreateSeat(ctx context.Context, seat Seat) error {
+	if err := r.db.Create(&seat).Error; err != nil {
+		return err
+	}
+	return nil
+}
+func (r *repository) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error) {
+	seats := []Seat{}
+	result := r.db.Where("screen_id =? ", screenId).Find(&seats)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return seats, nil
+}
+
+func (r *repository) GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error) {
+	seat := Seat{}
+	if err := r.db.Where("screen_id = ? AND seat_number = ?", screenId, seatNumber).First(&seat).Error; err != nil {
+		return nil, err
+	}
+	return &seat, nil
 }
 
 // Movie Schedule
@@ -576,12 +659,14 @@ func (r *repository) ListTheaters(ctx context.Context) ([]Theater, error) {
 	}
 	return theaters, nil
 }
+
 func (r *repository) UpdateTheaterWithoutID(ctx context.Context, theater *Theater) error {
 	if err := r.db.Save(theater).Error; err != nil {
 		return err
 	}
 	return nil
 }
+
 func (r *repository) UpdateTheater(ctx context.Context, id int, theater Theater) error {
 	r.db.Set("gorm:association_autoupdate", false).Set("gorm:association_autocreate", false)
 	result := r.db.Model(&Theater{}).Where("id = ?", id).Updates(theater)

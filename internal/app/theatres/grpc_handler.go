@@ -18,6 +18,108 @@ func NewGrpcHandler(svc Service) GrpcHandler {
 	}
 }
 
+// Seats
+func (h *GrpcHandler) CreateSeats(ctx context.Context, req *movie_booking.CreateSeatsRequest) (*movie_booking.CreateSeatsResponse, error) {
+	rowSeatCatetoryPrice := []RowSeatCategoryPrice{}
+	for _, res := range req.RowseatCategories {
+		rowSeats := RowSeatCategoryPrice{
+			RowStart:          res.RowStart,
+			RowEnd:            res.RowEnd,
+			SeatCategoryId:    int(res.SeatCategoryId),
+			SeatCategoryPrice: float32(res.SeatCategoryPrice),
+		}
+		rowSeatCatetoryPrice = append(rowSeatCatetoryPrice, rowSeats)
+	}
+	err := h.svc.CreateSeats(ctx, CreateSeatsRequest{
+		ScreenId:     int(req.ScreenId),
+		TotalRows:    int(req.TotalRows),
+		TotalColumns: int(req.TotalColumns),
+		SeatRequest:  rowSeatCatetoryPrice,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *GrpcHandler) GetSeatsByScreenID(ctx context.Context, req *movie_booking.GetSeatsByScreenIDRequest) (*movie_booking.GetSeatsByScreenIDResponse, error) {
+	seats, err := h.svc.GetSeatsByScreenId(ctx, int(req.ScreenId))
+	if err != nil {
+		return nil, err
+	}
+	grpcSeats := []*movie_booking.Seat{}
+	for _, seat := range seats {
+		grpcSeat := &movie_booking.Seat{
+			Id:                int32(seat.ID),
+			ScreenId:          int32(seat.ScreenID),
+			SeatNumber:        seat.SeatNumber,
+			Row:               seat.Row,
+			Column:            int32(seat.Column),
+			SeatCategoryId:    int32(seat.SeatCategoryID),
+			SeatCategoryPrice: float64(seat.SeatCategoryPrice),
+		}
+		grpcSeats = append(grpcSeats, grpcSeat)
+	}
+
+	return &movie_booking.GetSeatsByScreenIDResponse{Seats: grpcSeats}, nil
+}
+
+func (h *GrpcHandler) GetSeatByID(ctx context.Context, req *movie_booking.GetSeatByIdRequest) (*movie_booking.GetSeatByIdResponse, error) {
+	seat, err := h.svc.GetSeatById(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie_booking.GetSeatByIdResponse{
+		Seat: &movie_booking.Seat{
+			Id:                int32(seat.ID),
+			ScreenId:          int32(seat.ScreenID),
+			SeatNumber:        seat.SeatNumber,
+			Row:               seat.Row,
+			Column:            int32(seat.Column),
+			SeatCategoryId:    int32(seat.SeatCategoryID),
+			SeatCategoryPrice: float64(seat.SeatCategoryPrice),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) GetSeatBySeatNumberAndScreenID(ctx context.Context, req *movie_booking.GetSeatBySeatNumberAndScreenIdRequest) (*movie_booking.GetSeatBySeatNumberAndScreenIdResponse, error) {
+	seat, err := h.svc.GetSeatBySeatNumberAndScreenId(ctx, int(req.ScreenId), req.SeatNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie_booking.GetSeatBySeatNumberAndScreenIdResponse{
+		Seat: &movie_booking.Seat{
+			Id:                int32(seat.ID),
+			ScreenId:          int32(seat.ScreenID),
+			SeatNumber:        seat.SeatNumber,
+			Row:               seat.Row,
+			Column:            int32(seat.Column),
+			SeatCategoryId:    int32(seat.SeatCategoryID),
+			SeatCategoryPrice: float64(seat.SeatCategoryPrice),
+		},
+	}, nil
+}
+
+func (h *GrpcHandler) DeleteSeatByID(ctx context.Context, req *movie_booking.DeleteSeatByIdRequest) (*movie_booking.DeleteSeatByIdResponse, error) {
+	err := h.svc.DeleteSeatById(ctx, int(req.Id))
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie_booking.DeleteSeatByIdResponse{}, nil
+}
+
+func (h *GrpcHandler) DeleteSeatBySeatNumberAndScreenID(ctx context.Context, req *movie_booking.DeleteSeatBySeatNumberAndScreenIDRequest) (*movie_booking.DeleteSeatBySeatNumberAndScreenIDResponse, error) {
+	err := h.svc.DeleteSeatBySeatNumberAndScreenId(ctx, int(req.ScreenId), req.SeatNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie_booking.DeleteSeatBySeatNumberAndScreenIDResponse{}, nil
+}
+
 // Movie Schedule
 func (h *GrpcHandler) AddMovieSchedule(ctx context.Context, req *movie_booking.AddMovieScheduleRequest) (*movie_booking.AddMovieScheduleResponse, error) {
 	err := h.svc.AddMovieSchedule(ctx, MovieSchedule{
