@@ -227,12 +227,19 @@ func (s *service) AddMovieSchedule(ctx context.Context, movieSchedule MovieSched
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return fmt.Errorf("failed to check for existing schedule: %w", err)
 	}
-	if existingSchedule != nil {
-		return fmt.Errorf("movie schedule already exists for movie ID %d, theater ID %d, and showtime ID %d", movieSchedule.MovieID, movieSchedule.TheaterID, movieSchedule.ShowtimeID)
+	if existingSchedule != nil && existingSchedule.DeletedAt.Valid {
+		existingSchedule.DeletedAt = gorm.DeletedAt{}
+		if err := s.repo.UpdateMovieScheduleWithoutID(ctx, existingSchedule); err != nil {
+			return err
+		}
+		return nil
 	}
-
-	if err := s.repo.CreateMovieSchedule(ctx, movieSchedule); err != nil {
-		return fmt.Errorf("failed to create movie schedule: %w", err)
+	if err == gorm.ErrRecordNotFound {
+		if err := s.repo.CreateMovieSchedule(ctx, *existingSchedule); err != nil {
+			return fmt.Errorf("failed to create movie schedule: %w", err)
+		}
+	} else {
+		return errors.New("theater already exists")
 	}
 
 	return nil

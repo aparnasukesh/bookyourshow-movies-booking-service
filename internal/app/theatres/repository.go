@@ -239,7 +239,7 @@ func (r *repository) GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule,
 
 func (r *repository) GetMovieScheduleByDetails(ctx context.Context, movieId int, theaterId int, showtimeId int) (*MovieSchedule, error) {
 	movieSchedule := &MovieSchedule{}
-	if err := r.db.Where("movie_id =? AND theater_id =? AND showtime_id =?", movieId, theaterId, showtimeId).First(&movieSchedule).Error; err != nil {
+	if err := r.db.Unscoped().Where("movie_id =? AND theater_id =? AND showtime_id =?", movieId, theaterId, showtimeId).First(&movieSchedule).Error; err != nil {
 		return nil, err
 	}
 	return movieSchedule, nil
