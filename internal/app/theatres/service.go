@@ -49,24 +49,24 @@ type Service interface {
 	UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
 	//Theater screen
-	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
+	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen, ownerId int) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
 	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
 	GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error)
 	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
-	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
+	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen, ownerId int) error
 	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
 	//Show time
-	AddShowtime(ctx context.Context, showtime Showtime) error
+	AddShowtime(ctx context.Context, showtime Showtime, ownerId int) error
 	DeleteShowtimeByID(ctx context.Context, id int) error
 	DeleteShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) error
 	GetShowtimeByID(ctx context.Context, id int) (*Showtime, error)
 	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
-	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
+	UpdateShowtime(ctx context.Context, id int, showtime Showtime, ownerId int) error
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 	// Movie Schedule
-	AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error
-	UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule) error
+	AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule, ownerId int) error
+	UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule, ownerId int) error
 	GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule, error)
 	GetMovieScheduleByMovieID(ctx context.Context, id int) ([]MovieSchedule, error)
 	GetMovieScheduleByTheaterID(ctx context.Context, id int) ([]MovieSchedule, error)
@@ -78,7 +78,7 @@ type Service interface {
 	DeleteMovieScheduleByMovieIdAndTheaterId(ctx context.Context, movieId, theaterId int) error
 	DeleteMovieScheduleByMovieIdAndTheaterIdAndShowTimeId(ctx context.Context, movieId, theaterId, showTimeId int) error
 	// Seats
-	CreateSeats(ctx context.Context, req CreateSeatsRequest) error
+	CreateSeats(ctx context.Context, req CreateSeatsRequest, ownerId int) error
 	GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error)
 	GetSeatById(ctx context.Context, id int) (*Seat, error)
 	GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error)
@@ -94,13 +94,16 @@ func NewService(repo Repository, movieRepo movies.Repository) Service {
 }
 
 // Seats
-func (s *service) CreateSeats(ctx context.Context, req CreateSeatsRequest) error {
-	_, err := s.repo.GetTheaterScreenByID(ctx, req.ScreenId)
+func (s *service) CreateSeats(ctx context.Context, req CreateSeatsRequest, ownerId int) error {
+	theaterScreen, err := s.repo.GetTheaterScreenByID(ctx, req.ScreenId)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("no theater screen found with screen id %d", req.ScreenId)
 		}
 		return err
+	}
+	if theaterScreen.Theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only theater's admin can add seats")
 	}
 	totalColumns := req.TotalColumns
 	screenID := req.ScreenId
@@ -201,7 +204,7 @@ func (s *service) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat,
 }
 
 // Movie Schedule
-func (s *service) AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error {
+func (s *service) AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule, ownerId int) error {
 	movie, err := s.movieRepo.GetMovieDetailsById(ctx, movieSchedule.MovieID)
 	if err != nil && movie == nil {
 		if err == gorm.ErrRecordNotFound {
@@ -215,6 +218,9 @@ func (s *service) AddMovieSchedule(ctx context.Context, movieSchedule MovieSched
 			return fmt.Errorf("theater with ID %d does not exist", movieSchedule.TheaterID)
 		}
 		return fmt.Errorf("failed to fetch theater details: %w", err)
+	}
+	if theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only theater's admin can add movie schedule")
 	}
 	showtime, err := s.repo.GetShowtimeByID(ctx, movieSchedule.ShowtimeID)
 	if err != nil && showtime == nil {
@@ -344,7 +350,7 @@ func (s *service) GetMovieScheduleByTheaterIdAndShowTimeId(ctx context.Context, 
 	}
 	return movieSchedules, nil
 }
-func (s *service) UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule) error {
+func (s *service) UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule, ownerid int) error {
 	data, err := s.repo.GetMovieScheduleByID(ctx, id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -352,7 +358,9 @@ func (s *service) UpdateMovieSchedule(ctx context.Context, id int, updateData Mo
 		}
 		return fmt.Errorf("failed to retrieve movie schedule: %w", err)
 	}
-
+	if data.Theater.OwnerID != uint(ownerid) {
+		return fmt.Errorf("unauthorized: only theater's admin can update the movie schedule")
+	}
 	if updateData.MovieID != 0 {
 		if _, err := s.movieRepo.GetMovieDetailsById(ctx, updateData.MovieID); err != nil {
 			if err == gorm.ErrRecordNotFound {
@@ -680,10 +688,15 @@ func (s *service) GetTheaterByName(ctx context.Context, name string) ([]Theater,
 	}
 	return theaters, nil
 }
+
 func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error {
 	theater, err := s.repo.GetTheaterByID(ctx, int(theaterID))
 	if err != nil {
 		return fmt.Errorf("failed to find theater: %w", err)
+	}
+
+	if theater.OwnerID != input.OwnerID {
+		return fmt.Errorf("unauthorized: only the theater's admin can update this theater")
 	}
 
 	if input.Name != "" && input.Place != "" && input.City != "" {
@@ -786,13 +799,16 @@ func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 }
 
 // Theater Screens
-func (s *service) AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error {
+func (s *service) AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen, ownerId int) error {
 	theater, err := s.repo.GetTheaterByID(ctx, theaterScreen.TheaterID)
 	if theater == nil && err == gorm.ErrRecordNotFound {
 		return fmt.Errorf("theater not exist with theater id %d", theaterScreen.TheaterID)
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
+	}
+	if theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only the theater's admin can add theater screen in this theater")
 	}
 	screen, err := s.repo.GetScreenTypeByID(ctx, theaterScreen.ScreenTypeID)
 	if screen == nil && err == gorm.ErrRecordNotFound {
@@ -847,8 +863,18 @@ func (s *service) GetTheaterScreenByNumber(ctx context.Context, theaterID int, s
 	return theaterScreen, nil
 }
 
-func (s *service) UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error {
-	err := s.repo.UpdateTheaterScreen(ctx, id, theaterScreen)
+func (s *service) UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen, ownerId int) error {
+	res, err := s.repo.GetTheaterScreenByID(ctx, id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err != nil && err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("theater screen not found with id %d", id)
+	}
+	if res.Theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only the theater's admin can update this theater screen")
+	}
+	err = s.repo.UpdateTheaterScreen(ctx, id, theaterScreen)
 	if err != nil {
 		return err
 	}
@@ -867,7 +893,7 @@ func (s *service) ListTheaterScreens(ctx context.Context, theaterId int) ([]Thea
 }
 
 // Showtimes
-func (s *service) AddShowtime(ctx context.Context, showtime Showtime) error {
+func (s *service) AddShowtime(ctx context.Context, showtime Showtime, ownerId int) error {
 	movie, err := s.movieRepo.GetMovieDetailsById(ctx, showtime.MovieID)
 	if movie == nil && err == gorm.ErrRecordNotFound {
 		return fmt.Errorf("movie not exist with id %d", showtime.MovieID)
@@ -881,6 +907,9 @@ func (s *service) AddShowtime(ctx context.Context, showtime Showtime) error {
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
+	}
+	if theaterScreen.Theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only the theater's admin can add this show time")
 	}
 	res, err := s.repo.FindShowtimeByDetails(ctx, showtime.MovieID, showtime.ScreenID, showtime.ShowDate, showtime.ShowTime)
 	if res != nil && err == nil {
@@ -926,8 +955,19 @@ func (s *service) GetShowtimeByDetails(ctx context.Context, movieID int, screenI
 	return showtime, nil
 }
 
-func (s *service) UpdateShowtime(ctx context.Context, id int, showtime Showtime) error {
-	err := s.repo.UpdateShowtime(ctx, id, showtime)
+func (s *service) UpdateShowtime(ctx context.Context, id int, showtime Showtime, ownerId int) error {
+	res, err := s.repo.GetShowtimeByID(ctx, id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("show time not found with id %d", id)
+	}
+	theater, err := s.repo.GetTheaterByID(ctx, res.TheaterScreen.TheaterID)
+	if theater.OwnerID != uint(ownerId) {
+		return fmt.Errorf("unauthorized: only the theater's admin can update this show time")
+	}
+	err = s.repo.UpdateShowtime(ctx, id, showtime)
 	if err != nil {
 		return err
 	}

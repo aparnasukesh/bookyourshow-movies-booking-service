@@ -247,7 +247,7 @@ func (r *repository) GetMovieScheduleByDetails(ctx context.Context, movieId int,
 
 func (r *repository) GetMovieScheduleByID(ctx context.Context, id int) (*MovieSchedule, error) {
 	movieSchedule := &MovieSchedule{}
-	if err := r.db.Where("id = ?", id).First(&movieSchedule).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Preload("Theater").First(&movieSchedule).Error; err != nil {
 		return nil, err
 	}
 	return movieSchedule, nil
@@ -725,7 +725,7 @@ func (r *repository) DeleteTheaterScreenByNumber(ctx context.Context, theaterID 
 
 func (r *repository) GetTheaterScreenByID(ctx context.Context, id int) (*TheaterScreen, error) {
 	theaterScreen := &TheaterScreen{}
-	if err := r.db.Where("id = ?", id).First(&theaterScreen).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Preload("Theater").First(&theaterScreen).Error; err != nil {
 		return nil, err
 	}
 	return theaterScreen, nil
@@ -805,7 +805,7 @@ func (r *repository) DeleteShowtimeByDetails(ctx context.Context, movieID int, s
 
 func (r *repository) GetShowtimeByID(ctx context.Context, id int) (*Showtime, error) {
 	showtime := &Showtime{}
-	if err := r.db.Where("id = ?", id).First(&showtime).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Preload("TheaterScreen").First(&showtime).Error; err != nil {
 		return nil, err
 	}
 	return showtime, nil

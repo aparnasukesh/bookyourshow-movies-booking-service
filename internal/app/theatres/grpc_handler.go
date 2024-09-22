@@ -35,7 +35,7 @@ func (h *GrpcHandler) CreateSeats(ctx context.Context, req *movie_booking.Create
 		TotalRows:    int(req.TotalRows),
 		TotalColumns: int(req.TotalColumns),
 		SeatRequest:  rowSeatCatetoryPrice,
-	})
+	}, int(req.OwnerId))
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (h *GrpcHandler) AddMovieSchedule(ctx context.Context, req *movie_booking.A
 		MovieID:    int(req.MovieSchedule.MovieId),
 		TheaterID:  int(req.MovieSchedule.TheaterId),
 		ShowtimeID: int(req.MovieSchedule.ShowtimeId),
-	})
+	}, int(req.OwnerId))
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (h *GrpcHandler) UpdateMovieSchedule(ctx context.Context, req *movie_bookin
 		MovieID:    int(req.MovieSchedule.MovieId),
 		TheaterID:  int(req.MovieSchedule.TheaterId),
 		ShowtimeID: int(req.MovieSchedule.ShowtimeId),
-	})
+	}, int(req.OwnerId))
 	if err != nil {
 		return nil, err
 	}
@@ -627,6 +627,7 @@ func (h *GrpcHandler) GetTheaterByID(ctx context.Context, req *movie_booking.Get
 		},
 	}, nil
 }
+
 func (h *GrpcHandler) GetTheaterByName(ctx context.Context, req *movie_booking.GetTheaterByNameRequest) (*movie_booking.GetTheaterByNameResponse, error) {
 	theaters, err := h.svc.GetTheaterByName(ctx, req.Name)
 	if err != nil {
@@ -676,7 +677,6 @@ func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListT
 	if err != nil {
 		return nil, err
 	}
-
 	var grpcTheaters []*movie_booking.Theater
 	for _, m := range response {
 		grpcTheater := &movie_booking.Theater{
@@ -705,7 +705,7 @@ func (h *GrpcHandler) AddTheaterScreen(ctx context.Context, req *movie_booking.A
 		ScreenNumber: int(req.TheaterScreen.ScreenNumber),
 		SeatCapacity: int(req.TheaterScreen.SeatCapacity),
 		ScreenTypeID: int(req.TheaterScreen.ScreenTypeID),
-	}); err != nil {
+	}, int(req.OwnerId)); err != nil {
 		return &movie_booking.AddTheaterScreenResponse{}, err
 	}
 	return &movie_booking.AddTheaterScreenResponse{}, nil
@@ -763,7 +763,7 @@ func (h *GrpcHandler) UpdateTheaterScreen(ctx context.Context, req *movie_bookin
 		ScreenNumber: int(req.TheaterScreen.ScreenNumber),
 		SeatCapacity: int(req.TheaterScreen.SeatCapacity),
 		ScreenTypeID: int(req.TheaterScreen.ScreenTypeID),
-	})
+	}, int(req.OwnerId))
 	if err != nil {
 		return nil, err
 	}
@@ -800,7 +800,7 @@ func (h *GrpcHandler) AddShowtime(ctx context.Context, req *movie_booking.AddSho
 		ScreenID: int(req.Showtime.ScreenId),
 		ShowDate: req.Showtime.ShowDate.AsTime(),
 		ShowTime: req.Showtime.ShowTime.AsTime(),
-	}); err != nil {
+	}, int(req.OwnerId)); err != nil {
 		return &movie_booking.AddShowtimeResponse{}, err
 	}
 	return &movie_booking.AddShowtimeResponse{}, nil
@@ -858,7 +858,7 @@ func (h *GrpcHandler) UpdateShowtime(ctx context.Context, req *movie_booking.Upd
 		ScreenID: int(req.Showtime.ScreenId),
 		ShowDate: req.Showtime.ShowDate.AsTime(),
 		ShowTime: req.Showtime.ShowTime.AsTime(),
-	})
+	}, int(req.OwnerId))
 	if err != nil {
 		return nil, err
 	}

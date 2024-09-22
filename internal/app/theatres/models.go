@@ -22,6 +22,7 @@ type Theater struct {
 	TheaterScreens  []TheaterScreen `gorm:"foreignKey:TheaterID"`
 	MovieSchedules  []MovieSchedule `gorm:"foreignKey:TheaterID"`
 }
+
 type TheaterUpdateInput struct {
 	Name            string `json:"name,omitempty"`
 	Place           string `json:"place,omitempty"`
@@ -32,18 +33,22 @@ type TheaterUpdateInput struct {
 	NumberOfScreens int    `json:"number_of_screens,omitempty"`
 	TheaterTypeID   int    `json:"theater_type_id,omitempty"`
 }
+
+// Theater Type
 type TheaterType struct {
 	gorm.Model
 	TheaterTypeName string    `json:"theater_type_name"`
 	Theaters        []Theater `gorm:"foreignKey:TheaterTypeID"`
 }
 
+// Screen Type
 type ScreenType struct {
 	gorm.Model
 	ScreenTypeName string          `json:"screen_type_name"`
 	TheaterScreens []TheaterScreen `gorm:"foreignKey:ScreenTypeID"`
 }
 
+// Theater Screen
 type TheaterScreen struct {
 	gorm.Model
 	TheaterID    int        `json:"theater_id"`
@@ -56,6 +61,7 @@ type TheaterScreen struct {
 	Showtimes    []Showtime `gorm:"foreignKey:ScreenID"`
 }
 
+// Showtime
 type Showtime struct {
 	gorm.Model
 	MovieID       int           `json:"movie_id"`
@@ -66,6 +72,7 @@ type Showtime struct {
 	TheaterScreen TheaterScreen `gorm:"foreignKey:ScreenID"`
 }
 
+// Movie Schedule
 type MovieSchedule struct {
 	gorm.Model
 	MovieID    int          `json:"movie_id"`
@@ -76,12 +83,14 @@ type MovieSchedule struct {
 	Showtime   Showtime     `gorm:"foreignKey:ShowtimeID"`
 }
 
+// Seat Category
 type SeatCategory struct {
 	gorm.Model
 	SeatCategoryName string `json:"seat_category_name"`
 	Seats            []Seat `gorm:"foreignKey:SeatCategoryID"`
 }
 
+// Seat
 type Seat struct {
 	gorm.Model
 	ScreenID          int           `json:"screen_id"`
