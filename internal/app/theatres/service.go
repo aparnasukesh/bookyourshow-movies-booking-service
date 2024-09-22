@@ -964,6 +964,12 @@ func (s *service) UpdateShowtime(ctx context.Context, id int, showtime Showtime,
 		return fmt.Errorf("show time not found with id %d", id)
 	}
 	theater, err := s.repo.GetTheaterByID(ctx, res.TheaterScreen.TheaterID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return fmt.Errorf("theater not exist with id %d", res.TheaterScreen.TheaterID)
+	}
 	if theater.OwnerID != uint(ownerId) {
 		return fmt.Errorf("unauthorized: only the theater's admin can update this show time")
 	}
