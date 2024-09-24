@@ -18,6 +18,9 @@ type Repository interface {
 	UpdateMovie(ctx context.Context, movie Movie, movieId int) error
 	GetMovies(ctx context.Context) ([]Movie, error)
 	GetMovieDetailsById(ctx context.Context, movieId int) (*Movie, error)
+	GetMoviesByLanguage(ctx context.Context, language string) ([]Movie, error)
+	GetMoviesByGenre(ctx context.Context, genre string) ([]Movie, error)
+	GetMovieByName(ctx context.Context, name string) (*Movie, error)
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -84,4 +87,34 @@ func (r *repository) UpdateMovie(ctx context.Context, movie Movie, movieId int) 
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+func (r *repository) GetMovieByName(ctx context.Context, name string) (*Movie, error) {
+	movie := Movie{}
+	result := r.db.Where("title = ?", name).First(&movie)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		return nil, result.Error
+	}
+	if result.Error == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("no movie found with name %s", name)
+	}
+	return &movie, nil
+}
+
+func (r *repository) GetMoviesByGenre(ctx context.Context, genre string) ([]Movie, error) {
+	movies := []Movie{}
+	result := r.db.Where("genre= ?", genre).Find(&movies)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return movies, nil
+}
+
+func (r *repository) GetMoviesByLanguage(ctx context.Context, language string) ([]Movie, error) {
+	movies := []Movie{}
+	result := r.db.Where("language= ?", language).Find(&movies)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return movies, nil
 }

@@ -20,6 +20,56 @@ func NewGrpcHandler(svc Service) GrpcHandler {
 	}
 }
 
+func (h *GrpcHandler) GetMoviesByLanguage(ctx context.Context, req *movie_booking.GetMoviesByLanguageRequest) (*movie_booking.GetMoviesByLanguageResponse, error) {
+	var movies []Movie
+	movies, err := h.svc.GetMoviesByLanguage(ctx, req.Language)
+	if err != nil {
+		return nil, err
+	}
+	response := []*movie_booking.Movie{}
+	for _, movie := range movies {
+		res := &movie_booking.Movie{
+			MovieId:     uint32(movie.ID),
+			Title:       movie.Title,
+			Description: movie.Description,
+			Duration:    int32(movie.Duration),
+			Genre:       movie.Genre,
+			ReleaseDate: movie.ReleaseDate.String(),
+			Rating:      float32(movie.Rating),
+			Language:    movie.Language,
+		}
+		response = append(response, res)
+	}
+	return &movie_booking.GetMoviesByLanguageResponse{
+		Movie: response,
+	}, nil
+}
+
+func (h *GrpcHandler) GetMoviesByGenre(ctx context.Context, req *movie_booking.GetMoviesByGenreRequest) (*movie_booking.GetMoviesByGenreResponse, error) {
+	var movies []Movie
+	movies, err := h.svc.GetMoviesByGenre(ctx, req.Genre)
+	if err != nil {
+		return nil, err
+	}
+	response := []*movie_booking.Movie{}
+	for _, movie := range movies {
+		res := &movie_booking.Movie{
+			MovieId:     uint32(movie.ID),
+			Title:       movie.Title,
+			Description: movie.Description,
+			Duration:    int32(movie.Duration),
+			Genre:       movie.Genre,
+			ReleaseDate: movie.ReleaseDate.String(),
+			Rating:      float32(movie.Rating),
+			Language:    movie.Language,
+		}
+		response = append(response, res)
+	}
+	return &movie_booking.GetMoviesByGenreResponse{
+		Movie: response,
+	}, nil
+}
+
 func (h *GrpcHandler) RegisterMovie(ctx context.Context, req *movie_booking.RegisterMovieRequest) (*movie_booking.RegisterMovieResponse, error) {
 	date, err := utils.ParseDateString(req.ReleaseDate)
 	if err != nil {
@@ -54,8 +104,8 @@ func (h *GrpcHandler) DeleteMovie(ctx context.Context, req *movie_booking.Delete
 	return nil, nil
 }
 
-func (h *GrpcHandler) GetMovieDetails(ctx context.Context, req *movie_booking.GetMovieDetailsRequest) (*movie_booking.GetMovieDetailsResponse, error) {
-	movie, err := h.svc.GetMovieDetails(ctx, int(req.MovieId))
+func (h *GrpcHandler) GetMovieDetailsByID(ctx context.Context, req *movie_booking.GetMovieDetailsRequest) (*movie_booking.GetMovieDetailsResponse, error) {
+	movie, err := h.svc.GetMovieDetailsByID(ctx, int(req.MovieId))
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +122,7 @@ func (h *GrpcHandler) GetMovieDetails(ctx context.Context, req *movie_booking.Ge
 		},
 	}, nil
 }
+
 func (h *GrpcHandler) UpdateMovie(ctx context.Context, req *movie_booking.UpdateMovieRequest) (*movie_booking.UpdateMovieResponse, error) {
 	var date *time.Time
 	var err error
@@ -124,5 +175,25 @@ func (h *GrpcHandler) ListMovies(ctx context.Context, req *movie_booking.ListMov
 
 	return &movie_booking.ListMoviesResponse{
 		Movies: grpcMovies,
+	}, nil
+}
+
+func (h *GrpcHandler) GetMovieByName(ctx context.Context, req *movie_booking.GetMovieByNameRequest) (*movie_booking.GetMovieByNameResponse, error) {
+	movie, err := h.svc.GetMovieByName(ctx, req.MovieName)
+	if err != nil {
+		return nil, err
+	}
+	response := &movie_booking.Movie{
+		MovieId:     uint32(movie.ID),
+		Title:       movie.Title,
+		Description: movie.Description,
+		Duration:    int32(movie.Duration),
+		Genre:       movie.Genre,
+		ReleaseDate: movie.ReleaseDate.String(),
+		Rating:      float32(movie.Rating),
+		Language:    movie.Language,
+	}
+	return &movie_booking.GetMovieByNameResponse{
+		Movie: response,
 	}, nil
 }
