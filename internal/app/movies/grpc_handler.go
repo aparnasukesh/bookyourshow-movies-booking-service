@@ -111,7 +111,6 @@ func (h *GrpcHandler) GetMovieDetailsByID(ctx context.Context, req *movie_bookin
 	}
 	return &movie_booking.GetMovieDetailsResponse{
 		Movie: &movie_booking.Movie{
-			MovieId:     req.MovieId,
 			Title:       movie.Title,
 			Description: movie.Description,
 			Duration:    int32(movie.Duration),
@@ -194,6 +193,26 @@ func (h *GrpcHandler) GetMovieByName(ctx context.Context, req *movie_booking.Get
 		Language:    movie.Language,
 	}
 	return &movie_booking.GetMovieByNameResponse{
+		Movie: response,
+	}, nil
+}
+
+func (h *GrpcHandler) GetMovieByNameAndLanguage(ctx context.Context, req *movie_booking.GetMovieByNameAndLanguageRequest) (*movie_booking.GetMovieByNameAndLanguageResponse, error) {
+	movie, err := h.svc.GetMovieByNameAndLanguage(ctx, req.Name, req.Language)
+	if err != nil {
+		return nil, err
+	}
+	response := &movie_booking.Movie{
+		MovieId:     uint32(movie.ID),
+		Title:       movie.Title,
+		Description: movie.Description,
+		Duration:    int32(movie.Duration),
+		Genre:       movie.Genre,
+		ReleaseDate: movie.ReleaseDate.String(),
+		Rating:      float32(movie.Rating),
+		Language:    movie.Language,
+	}
+	return &movie_booking.GetMovieByNameAndLanguageResponse{
 		Movie: response,
 	}, nil
 }

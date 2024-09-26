@@ -7,7 +7,8 @@ import (
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 	"github.com/aparnasukesh/movies-booking-svc/internal/boot"
-	"github.com/aparnasukesh/movies-booking-svc/pkg/sql"
+	redis "github.com/aparnasukesh/movies-booking-svc/pkg/redis"
+	sql "github.com/aparnasukesh/movies-booking-svc/pkg/sql"
 )
 
 func InitResources(cfg config.Config) (func() error, error) {
@@ -18,9 +19,15 @@ func InitResources(cfg config.Config) (func() error, error) {
 		log.Fatal(err)
 	}
 
+	// Redis initialization
+	redisClient, err := redis.NewRedis(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// // Movie Module Initialization
 	movieRepo := movies.NewRepository(db)
-	movieService := movies.NewService(movieRepo)
+	movieService := movies.NewService(movieRepo, redisClient)
 	movieGrpcHandler := movies.NewGrpcHandler(movieService)
 
 	// Theatres Module initialization

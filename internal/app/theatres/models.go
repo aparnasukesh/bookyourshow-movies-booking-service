@@ -117,3 +117,19 @@ type CreateSeatsRequest struct {
 	TotalColumns int                    `json:"total_columns"`
 	SeatRequest  []RowSeatCategoryPrice `json:"seat_request"`
 }
+type TheaterWithTypeResponse struct {
+	ID              int                 `json:"id"`
+	Name            string              `json:"name"`
+	Place           string              `json:"place"`
+	City            string              `json:"city"`
+	District        string              `json:"district"`
+	State           string              `json:"state"`
+	OwnerID         int                 `json:"owner_id"`
+	NumberOfScreens int                 `json:"number_of_screens"`
+	TheaterType     TheaterTypeResponse `json:"TheaterType"`
+}
+
+type TheaterTypeResponse struct {
+	ID              int    `json:"id"`
+	TheaterTypeName string `json:"theater_type_name"`
+}

@@ -671,14 +671,15 @@ func (h *GrpcHandler) UpdateTheater(ctx context.Context, req *movie_booking.Upda
 	}
 	return &movie_booking.UpdateTheaterResponse{}, nil
 }
-
 func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListTheatersRequest) (*movie_booking.ListTheatersResponse, error) {
-	response, err := h.svc.ListTheaters(ctx)
+	theatersWithType, err := h.svc.ListTheaters(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	var grpcTheaters []*movie_booking.Theater
-	for _, m := range response {
+
+	for _, m := range theatersWithType {
 		grpcTheater := &movie_booking.Theater{
 			TheaterId:       int32(m.ID),
 			Name:            m.Name,
@@ -688,8 +689,13 @@ func (h *GrpcHandler) ListTheaters(ctx context.Context, req *movie_booking.ListT
 			State:           m.State,
 			OwnerId:         uint32(m.OwnerID),
 			NumberOfScreens: int32(m.NumberOfScreens),
-			TheaterTypeId:   int32(m.TheaterTypeID),
+			TheaterTypeId:   int32(m.TheaterType.ID),
+			TheaterType: &movie_booking.TheaterType{
+				Id:              int32(m.TheaterType.ID),
+				TheaterTypeName: m.TheaterType.TheaterTypeName,
+			},
 		}
+
 		grpcTheaters = append(grpcTheaters, grpcTheater)
 	}
 

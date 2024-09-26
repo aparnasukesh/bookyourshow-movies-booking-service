@@ -47,7 +47,7 @@ type Service interface {
 	GetTheaterByID(ctx context.Context, id int) (*Theater, error)
 	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
 	UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error
-	ListTheaters(ctx context.Context) ([]Theater, error)
+	ListTheaters(ctx context.Context) ([]TheaterWithTypeResponse, error)
 	//Theater screen
 	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen, ownerId int) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
@@ -786,8 +786,7 @@ func (s *service) UpdateTheater(ctx context.Context, theaterID uint, input Theat
 
 	return nil
 }
-
-func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
+func (s *service) ListTheaters(ctx context.Context) ([]TheaterWithTypeResponse, error) {
 	theaters, err := s.repo.ListTheaters(ctx)
 	if err != nil {
 		return nil, err
@@ -795,7 +794,28 @@ func (s *service) ListTheaters(ctx context.Context) ([]Theater, error) {
 	if len(theaters) < 1 {
 		return nil, errors.New("no theaters found")
 	}
-	return theaters, nil
+
+	theaterResponses := []TheaterWithTypeResponse{}
+
+	for _, theater := range theaters {
+		theaterResponse := TheaterWithTypeResponse{
+			ID:              int(theater.ID),
+			Name:            theater.Name,
+			Place:           theater.Place,
+			City:            theater.City,
+			District:        theater.District,
+			State:           theater.State,
+			OwnerID:         int(theater.OwnerID),
+			NumberOfScreens: theater.NumberOfScreens,
+			TheaterType: TheaterTypeResponse{
+				ID:              int(theater.TheaterType.ID),
+				TheaterTypeName: theater.TheaterType.TheaterTypeName,
+			},
+		}
+		theaterResponses = append(theaterResponses, theaterResponse)
+	}
+
+	return theaterResponses, nil
 }
 
 // Theater Screens

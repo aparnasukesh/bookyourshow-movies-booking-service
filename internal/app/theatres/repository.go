@@ -654,7 +654,7 @@ func (r *repository) GetTheaterByName(ctx context.Context, name string) ([]Theat
 
 func (r *repository) ListTheaters(ctx context.Context) ([]Theater, error) {
 	theaters := []Theater{}
-	if err := r.db.Find(&theaters).Error; err != nil {
+	if err := r.db.Preload("TheaterType").Find(&theaters).Error; err != nil {
 		return nil, err
 	}
 	return theaters, nil
