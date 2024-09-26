@@ -48,7 +48,8 @@ type Service interface {
 	GetTheaterByName(ctx context.Context, name string) ([]Theater, error)
 	UpdateTheater(ctx context.Context, theaterID uint, input TheaterUpdateInput) error
 	ListTheaters(ctx context.Context) ([]TheaterWithTypeResponse, error)
-	//Theater screen
+	GetTheatersByCity(ctx context.Context, city string) ([]Theater, error)
+	GetTheatersAndMovieScheduleByMovieName(ctx context.Context, movieName string) ([]MovieSchedule, *movies.Movie, error) //Theater screen
 	AddTheaterScreen(ctx context.Context, theaterScreen TheaterScreen, ownerId int) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
 	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
@@ -91,6 +92,37 @@ func NewService(repo Repository, movieRepo movies.Repository) Service {
 		repo:      repo,
 		movieRepo: movieRepo,
 	}
+}
+
+// Theaters
+
+func (s *service) GetTheatersByCity(ctx context.Context, city string) ([]Theater, error) {
+	theaters, err := s.repo.GetTheatersByCity(ctx, city)
+	if err != nil {
+		return nil, err
+	}
+	if len(theaters) < 1 {
+		return nil, fmt.Errorf("no theaters with name %s", city)
+	}
+	return theaters, nil
+}
+
+func (s *service) GetTheatersAndMovieScheduleByMovieName(ctx context.Context, movieName string) ([]MovieSchedule, *movies.Movie, error) {
+	movie, err := s.movieRepo.GetMovieByName(ctx, movieName)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil, fmt.Errorf("movie not found with name %s", movieName)
+	}
+	movieSchedule, err := s.repo.GetTheatersAndMovieScheduleByMovieName(ctx, int(movie.ID))
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(movieSchedule) < 1 {
+		return nil, nil, fmt.Errorf("no movie schedule found with movie name %s", movieName)
+	}
+	return movieSchedule, movie, nil
 }
 
 // Seats
@@ -672,8 +704,11 @@ func (s *service) DeleteTheaterByName(ctx context.Context, name string) error {
 
 func (s *service) GetTheaterByID(ctx context.Context, id int) (*Theater, error) {
 	theater, err := s.repo.GetTheaterByID(ctx, id)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("no theater found with id %d", id)
 	}
 	return theater, nil
 }

@@ -18,6 +18,89 @@ func NewGrpcHandler(svc Service) GrpcHandler {
 	}
 }
 
+// Theaters
+func (h *GrpcHandler) GetTheatersByCity(ctx context.Context, req *movie_booking.GetTheatersByCityRequest) (*movie_booking.GetTheatersByCityResponse, error) {
+	theaters, err := h.svc.GetTheatersByCity(ctx, req.City)
+	if err != nil {
+		return nil, err
+	}
+	response := []*movie_booking.Theater{}
+	for _, theater := range theaters {
+		res := movie_booking.Theater{
+			TheaterId:       int32(theater.ID),
+			Name:            theater.Name,
+			Place:           theater.Place,
+			City:            theater.City,
+			District:        theater.District,
+			State:           theater.State,
+			OwnerId:         uint32(theater.OwnerID),
+			NumberOfScreens: int32(theater.NumberOfScreens),
+			TheaterTypeId:   int32(theater.TheaterTypeID),
+			TheaterType: &movie_booking.TheaterType{
+				Id:              int32(theater.TheaterType.ID),
+				TheaterTypeName: theater.TheaterType.TheaterTypeName,
+			},
+		}
+		response = append(response, &res)
+	}
+	return &movie_booking.GetTheatersByCityResponse{
+		Theater: response,
+	}, nil
+}
+
+func (h *GrpcHandler) GetTheatersAndMovieScheduleByMovieName(ctx context.Context, req *movie_booking.GetTheatersAndMovieScheduleByMovieNameRequest) (*movie_booking.GetTheatersAndMovieScheduleByMovieNameResponse, error) {
+	movieSchedules, movie, err := h.svc.GetTheatersAndMovieScheduleByMovieName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	response := []*movie_booking.MovieSchedule{}
+
+	for _, movieSchedule := range movieSchedules {
+		res := movie_booking.MovieSchedule{
+			Id:         int32(movieSchedule.ID),
+			MovieId:    int32(movieSchedule.MovieID),
+			TheaterId:  int32(movieSchedule.TheaterID),
+			ShowtimeId: int32(movieSchedule.ShowtimeID),
+			Movie: &movie_booking.Movie{
+				MovieId:     uint32(movie.ID),
+				Title:       movie.Title,
+				Description: movie.Description,
+				Duration:    int32(movie.Duration),
+				Genre:       movie.Genre,
+				ReleaseDate: movie.ReleaseDate.String(),
+				Rating:      float32(movie.Rating),
+				Language:    movie.Language,
+			},
+			Theater: &movie_booking.Theater{
+				TheaterId:       int32(movieSchedule.Theater.ID),
+				Name:            movieSchedule.Theater.Name,
+				Place:           movieSchedule.Theater.Place,
+				City:            movieSchedule.Theater.City,
+				District:        movieSchedule.Theater.District,
+				State:           movieSchedule.Theater.State,
+				OwnerId:         uint32(movieSchedule.Theater.OwnerID),
+				NumberOfScreens: int32(movieSchedule.Theater.NumberOfScreens),
+				TheaterTypeId:   int32(movieSchedule.Theater.TheaterTypeID),
+				TheaterType:     &movie_booking.TheaterType{},
+			},
+			ShowTime: &movie_booking.Showtime{
+				Id:            uint32(movieSchedule.Showtime.ID),
+				MovieId:       int32(movie.ID),
+				ScreenId:      int32(movieSchedule.Showtime.ScreenID),
+				ShowDate:      timestamppb.New(movieSchedule.Showtime.ShowDate),
+				ShowTime:      timestamppb.New(movieSchedule.Showtime.ShowTime),
+				Movie:         &movie_booking.Movie{},
+				TheaterScreen: &movie_booking.TheaterScreen{},
+			},
+		}
+		response = append(response, &res)
+	}
+	return &movie_booking.GetTheatersAndMovieScheduleByMovieNameResponse{
+		MovieScedule: response,
+	}, nil
+}
+
 // Seats
 func (h *GrpcHandler) CreateSeats(ctx context.Context, req *movie_booking.CreateSeatsRequest) (*movie_booking.CreateSeatsResponse, error) {
 	rowSeatCatetoryPrice := []RowSeatCategoryPrice{}
@@ -623,7 +706,11 @@ func (h *GrpcHandler) GetTheaterByID(ctx context.Context, req *movie_booking.Get
 			State:           theater.State,
 			OwnerId:         uint32(theater.OwnerID),
 			NumberOfScreens: int32(theater.NumberOfScreens),
-			TheaterTypeId:   int32(theater.TheaterTypeID),
+			TheaterTypeId:   int32(theater.TheaterType.ID),
+			TheaterType: &movie_booking.TheaterType{
+				Id:              int32(theater.TheaterTypeID),
+				TheaterTypeName: theater.TheaterType.TheaterTypeName,
+			},
 		},
 	}, nil
 }
@@ -646,6 +733,10 @@ func (h *GrpcHandler) GetTheaterByName(ctx context.Context, req *movie_booking.G
 			OwnerId:         uint32(theater.OwnerID),
 			NumberOfScreens: int32(theater.NumberOfScreens),
 			TheaterTypeId:   int32(theater.TheaterTypeID),
+			TheaterType: &movie_booking.TheaterType{
+				Id:              int32(theater.TheaterTypeID),
+				TheaterTypeName: theater.TheaterType.TheaterTypeName,
+			},
 		}
 		theaterResponses = append(theaterResponses, theaterResponse)
 	}

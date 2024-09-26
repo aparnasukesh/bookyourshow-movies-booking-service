@@ -63,6 +63,8 @@ type Repository interface {
 	GetTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error)
 	UpdateTheaterScreen(ctx context.Context, id int, theaterScreen TheaterScreen) error
 	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
+	GetTheatersByCity(ctx context.Context, city string) ([]Theater, error)
+	GetTheatersAndMovieScheduleByMovieName(ctx context.Context, id int) ([]MovieSchedule, error)
 	//Show Time
 	FindShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
 	CreateShowtime(ctx context.Context, showtime Showtime) error
@@ -178,6 +180,14 @@ func (r *repository) GetSeatBySeatNumberAndScreenId(ctx context.Context, screenI
 }
 
 // Movie Schedule
+func (r *repository) GetTheatersAndMovieScheduleByMovieName(ctx context.Context, id int) ([]MovieSchedule, error) {
+	movieSchedule := []MovieSchedule{}
+	if err := r.db.Preload("Theater").Preload("Showtime").Where("movie_id =?", id).Find(&movieSchedule).Error; err != nil {
+		return nil, err
+	}
+	return movieSchedule, nil
+}
+
 func (r *repository) UpdateMovieScheduleWithoutID(ctx context.Context, movieschedule *MovieSchedule) error {
 	if err := r.db.Save(movieschedule).Error; err != nil {
 		return err
@@ -638,7 +648,7 @@ func (r *repository) DeleteTheaterByName(ctx context.Context, name string) error
 
 func (r *repository) GetTheaterByID(ctx context.Context, id int) (*Theater, error) {
 	theater := Theater{}
-	if err := r.db.Where("id = ?", id).First(&theater).Error; err != nil {
+	if err := r.db.Preload("TheaterType").Where("id = ?", id).First(&theater).Error; err != nil {
 		return nil, err
 	}
 	return &theater, nil
@@ -646,7 +656,15 @@ func (r *repository) GetTheaterByID(ctx context.Context, id int) (*Theater, erro
 
 func (r *repository) GetTheaterByName(ctx context.Context, name string) ([]Theater, error) {
 	theater := []Theater{}
-	if err := r.db.Where("name ILIKE ?", name).Find(&theater).Error; err != nil {
+	if err := r.db.Preload("TheaterType").Where("name ILIKE ?", name).Find(&theater).Error; err != nil {
+		return nil, err
+	}
+	return theater, nil
+}
+
+func (r *repository) GetTheatersByCity(ctx context.Context, city string) ([]Theater, error) {
+	theater := []Theater{}
+	if err := r.db.Preload("TheaterType").Where("city ILIKE ?", city).Find(&theater).Error; err != nil {
 		return nil, err
 	}
 	return theater, nil
