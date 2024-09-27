@@ -25,6 +25,7 @@ func (h *GrpcHandler) GetTheatersByCity(ctx context.Context, req *movie_booking.
 		return nil, err
 	}
 	response := []*movie_booking.Theater{}
+
 	for _, theater := range theaters {
 		res := movie_booking.Theater{
 			TheaterId:       int32(theater.ID),
@@ -48,6 +49,90 @@ func (h *GrpcHandler) GetTheatersByCity(ctx context.Context, req *movie_booking.
 	}, nil
 }
 
+func (h *GrpcHandler) GetScreensAndMovieScedulesByTheaterID(ctx context.Context, req *movie_booking.GetScreensAndMovieScedulesByTheaterIdRequest) (*movie_booking.GetScreensAndMovieScedulesByTheaterIdResponse, error) {
+	screens, movieSchedule, theater, err := h.svc.GetScreensAndMovieSchedulesByTheaterID(ctx, int(req.TheaterId))
+	if err != nil {
+		return nil, err
+	}
+	theaterRes := &movie_booking.Theater{
+		TheaterId:       int32(theater.ID),
+		Name:            theater.Name,
+		Place:           theater.Place,
+		City:            theater.City,
+		District:        theater.District,
+		State:           theater.State,
+		OwnerId:         uint32(theater.OwnerID),
+		NumberOfScreens: int32(theater.NumberOfScreens),
+		TheaterTypeId:   int32(theater.TheaterTypeID),
+		TheaterType: &movie_booking.TheaterType{
+			Id:              int32(theater.TheaterType.ID),
+			TheaterTypeName: theater.TheaterType.TheaterTypeName,
+		},
+	}
+	movieScheduleRes := []*movie_booking.MovieSchedule{}
+	for _, schedule := range movieSchedule {
+		res := movie_booking.MovieSchedule{
+			Id:         int32(schedule.ID),
+			MovieId:    int32(schedule.MovieID),
+			TheaterId:  int32(schedule.TheaterID),
+			ShowtimeId: int32(schedule.ShowtimeID),
+			Movie: &movie_booking.Movie{
+				MovieId:     uint32(schedule.MovieID),
+				Title:       schedule.Movie.Title,
+				Description: schedule.Movie.Description,
+				Duration:    int32(schedule.Movie.Duration),
+				Genre:       schedule.Movie.Genre,
+				ReleaseDate: schedule.Movie.ReleaseDate.String(),
+				Rating:      float32(schedule.Movie.Rating),
+				Language:    schedule.Movie.Language,
+			},
+			Theater: theaterRes,
+			ShowTime: &movie_booking.Showtime{
+				Id:       uint32(schedule.ShowtimeID),
+				MovieId:  int32(schedule.Showtime.MovieID),
+				ScreenId: int32(schedule.Showtime.ScreenID),
+				ShowDate: timestamppb.New(schedule.Showtime.ShowDate),
+				ShowTime: timestamppb.New(schedule.Showtime.ShowDate),
+				Movie:    &movie_booking.Movie{},
+				TheaterScreen: &movie_booking.TheaterScreen{
+					ID:           uint32(schedule.Showtime.ScreenID),
+					TheaterID:    int32(schedule.Showtime.TheaterScreen.TheaterID),
+					ScreenNumber: int32(schedule.Showtime.TheaterScreen.ScreenNumber),
+					SeatCapacity: int32(schedule.Showtime.TheaterScreen.SeatCapacity),
+					ScreenTypeID: int32(schedule.Showtime.TheaterScreen.ScreenTypeID),
+					Theater:      theaterRes,
+					ScreenType:   &movie_booking.ScreenType{},
+				},
+			},
+		}
+		movieScheduleRes = append(movieScheduleRes, &res)
+	}
+
+	theaterScreenRes := []*movie_booking.TheaterScreen{}
+
+	for _, screen := range screens {
+		res := movie_booking.TheaterScreen{
+			ID:           uint32(screen.ID),
+			TheaterID:    int32(screen.TheaterID),
+			ScreenNumber: int32(screen.ScreenNumber),
+			SeatCapacity: int32(screen.SeatCapacity),
+			ScreenTypeID: int32(screen.ScreenTypeID),
+			Theater:      theaterRes,
+			ScreenType: &movie_booking.ScreenType{
+				Id:             int32(screen.ScreenType.ID),
+				ScreenTypeName: screen.ScreenType.ScreenTypeName,
+			},
+		}
+		theaterScreenRes = append(theaterScreenRes, &res)
+	}
+
+	return &movie_booking.GetScreensAndMovieScedulesByTheaterIdResponse{
+		Theater:       theaterRes,
+		MovieSchedule: movieScheduleRes,
+		TheaterScreen: theaterScreenRes,
+	}, nil
+
+}
 func (h *GrpcHandler) GetTheatersAndMovieScheduleByMovieName(ctx context.Context, req *movie_booking.GetTheatersAndMovieScheduleByMovieNameRequest) (*movie_booking.GetTheatersAndMovieScheduleByMovieNameResponse, error) {
 	movieSchedules, movie, err := h.svc.GetTheatersAndMovieScheduleByMovieName(ctx, req.Name)
 	if err != nil {

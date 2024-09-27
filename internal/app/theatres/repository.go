@@ -54,7 +54,8 @@ type Repository interface {
 	UpdateTheater(ctx context.Context, id int, theater Theater) error
 	UpdateTheaterWithoutID(ctx context.Context, theater *Theater) error
 	ListTheaters(ctx context.Context) ([]Theater, error)
-	FindActiveTheaterByNamePlaceAndCity(ctx context.Context, name string, place string, city string) (*Theater, error) //Theater screen
+	FindActiveTheaterByNamePlaceAndCity(ctx context.Context, name string, place string, city string) (*Theater, error)
+	//Theater screen
 	CreateTheaterScreen(ctx context.Context, theaterScreen TheaterScreen) error
 	DeleteTheaterScreenByID(ctx context.Context, id int) error
 	DeleteTheaterScreenByNumber(ctx context.Context, theaterID int, screenNumber int) error
@@ -65,6 +66,7 @@ type Repository interface {
 	ListTheaterScreens(ctx context.Context, theaterId int) ([]TheaterScreen, error)
 	GetTheatersByCity(ctx context.Context, city string) ([]Theater, error)
 	GetTheatersAndMovieScheduleByMovieName(ctx context.Context, id int) ([]MovieSchedule, error)
+	GetTheaterScreenByTheaterID(ctx context.Context, theaterId int) ([]TheaterScreen, error)
 	//Show Time
 	FindShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
 	CreateShowtime(ctx context.Context, showtime Showtime) error
@@ -246,10 +248,15 @@ func (r *repository) GetAllMovieSchedules(ctx context.Context) ([]MovieSchedule,
 	}
 	return movieSchedules, nil
 }
-
 func (r *repository) GetMovieScheduleByDetails(ctx context.Context, movieId int, theaterId int, showtimeId int) (*MovieSchedule, error) {
 	movieSchedule := &MovieSchedule{}
-	if err := r.db.Unscoped().Where("movie_id =? AND theater_id =? AND showtime_id =?", movieId, theaterId, showtimeId).First(&movieSchedule).Error; err != nil {
+
+	err := r.db.Unscoped().Where("movie_id = ? AND theater_id = ? AND showtime_id = ?", movieId, theaterId, showtimeId).First(movieSchedule).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return nil, err
 	}
 	return movieSchedule, nil
@@ -289,7 +296,7 @@ func (r *repository) GetMovieScheduleByMovieIdAndTheaterId(ctx context.Context, 
 
 func (r *repository) GetMovieScheduleByTheaterID(ctx context.Context, theaterId int) ([]MovieSchedule, error) {
 	movieSchedule := []MovieSchedule{}
-	if err := r.db.Where("theater_id = ?", theaterId).Find(&movieSchedule).Error; err != nil {
+	if err := r.db.Preload("Theater").Preload("Showtime").Where("theater_id = ?", theaterId).Find(&movieSchedule).Error; err != nil {
 		return nil, err
 	}
 	return movieSchedule, nil
@@ -698,6 +705,14 @@ func (r *repository) UpdateTheater(ctx context.Context, id int, theater Theater)
 }
 
 // TheaterScreen
+func (r *repository) GetTheaterScreenByTheaterID(ctx context.Context, theaterId int) ([]TheaterScreen, error) {
+	theaterScreen := []TheaterScreen{}
+	if err := r.db.Preload("Theater").Preload("ScreenType").Where("theater_id = ?", theaterId).Find(&theaterScreen).Error; err != nil {
+		return nil, err
+	}
+	return theaterScreen, nil
+}
+
 func (r *repository) FindTheaterScreenByTheaterIDAndScreenNumber(ctx context.Context, theaterID int, screenNumber int) (*TheaterScreen, error) {
 	theaterScreen := &TheaterScreen{}
 	res := r.db.Where("theater_id = ? AND screen_number = ?", theaterID, screenNumber).First(theaterScreen)
@@ -823,7 +838,7 @@ func (r *repository) DeleteShowtimeByDetails(ctx context.Context, movieID int, s
 
 func (r *repository) GetShowtimeByID(ctx context.Context, id int) (*Showtime, error) {
 	showtime := &Showtime{}
-	if err := r.db.Where("id = ?", id).Preload("TheaterScreen").First(&showtime).Error; err != nil {
+	if err := r.db.Preload("TheaterScreen").Where("id = ?", id).Preload("TheaterScreen").First(&showtime).Error; err != nil {
 		return nil, err
 	}
 	return showtime, nil
