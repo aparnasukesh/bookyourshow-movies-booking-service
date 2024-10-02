@@ -76,6 +76,7 @@ type Repository interface {
 	GetShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error)
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
+	ListShowTimeByTheaterID(ctx context.Context, screenIDs []int) ([]Showtime, error)
 	// Movie Shedule
 	GetMovieScheduleByDetails(ctx context.Context, movieId, theaterId, showtimeId int) (*MovieSchedule, error)
 	CreateMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error
@@ -105,6 +106,19 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{
 		db: db,
 	}
+}
+
+// Show Time
+func (r *repository) ListShowTimeByTheaterID(ctx context.Context, screenIDs []int) ([]Showtime, error) {
+	var showtimes []Showtime
+
+	if err := r.db.Preload("Movie").Preload("TheaterScreen").Where("screen_id IN ?", screenIDs).
+		Find(&showtimes).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return showtimes, nil
 }
 
 // Seats

@@ -68,7 +68,7 @@ type Showtime struct {
 	ScreenID      int           `json:"screen_id"`
 	ShowDate      time.Time     `json:"show_date"`
 	ShowTime      time.Time     `json:"show_time"`
-	Movie         movies.Movie  `gorm:"foreignKey:MovieID"`
+	Movie         Movie         `gorm:"foreignKey:MovieID"`
 	TheaterScreen TheaterScreen `gorm:"foreignKey:ScreenID"`
 }
 
@@ -132,4 +132,15 @@ type TheaterWithTypeResponse struct {
 type TheaterTypeResponse struct {
 	ID              int    `json:"id"`
 	TheaterTypeName string `json:"theater_type_name"`
+}
+
+type Movie struct {
+	ID          uint      `json:"id"`
+	Title       string    `gorm:"type:varchar(100);not null"`
+	Description string    `gorm:"type:text"`
+	Duration    int       `gorm:"not null"`
+	Genre       string    `gorm:"type:varchar(50)"`
+	ReleaseDate time.Time `gorm:"not null"`
+	Rating      float64   `gorm:"type:decimal(3,1)"`
+	Language    string    `gorm:"type:varchar(100);not null"`
 }
