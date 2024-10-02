@@ -67,6 +67,7 @@ type Service interface {
 	UpdateShowtime(ctx context.Context, id int, showtime Showtime, ownerId int) error
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 	ListShowTimeByTheaterID(ctx context.Context, theaterId int) ([]Showtime, *Theater, error)
+	ListShowTimeByTheaterIDandMovieID(ctx context.Context, theaterId, movieId int) ([]Showtime, *Theater, *movies.Movie, error)
 	// Movie Schedule
 	AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule, ownerId int) error
 	UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule, ownerId int) error
@@ -97,6 +98,46 @@ func NewService(repo Repository, movieRepo movies.Repository) Service {
 }
 
 // Showtime
+func (s *service) ListShowTimeByTheaterIDandMovieID(ctx context.Context, theaterId, movieId int) ([]Showtime, *Theater, *movies.Movie, error) {
+	theater, err := s.repo.GetTheaterByID(ctx, theaterId)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, nil, nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil, nil, fmt.Errorf("theater is not found with id %d,theater id is invalid", theaterId)
+	}
+	movie, err := s.movieRepo.GetMovieDetailsById(ctx, movieId)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, nil, nil, err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil, nil, fmt.Errorf("movie is not found with id %d,movie id is invalid", movieId)
+	}
+	theaterScreens, err := s.repo.GetTheaterScreenByTheaterID(ctx, theaterId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if len(theaterScreens) < 1 {
+		return nil, nil, nil, fmt.Errorf("no theater screens found with this theater id %d", theaterId)
+	}
+
+	screenIDs := make([]int, len(theaterScreens))
+	for i, screen := range theaterScreens {
+		screenIDs[i] = int(screen.ID)
+	}
+
+	showtimes, err := s.repo.ListShowTimeByTheaterID(ctx, screenIDs)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if len(showtimes) < 1 {
+		return nil, nil, nil, fmt.Errorf("no showtimes found with thieater id %d", theaterId)
+	}
+
+	return showtimes, theater, movie, nil
+}
+
 func (s *service) ListShowTimeByTheaterID(ctx context.Context, theaterId int) ([]Showtime, *Theater, error) {
 	theater, err := s.repo.GetTheaterByID(ctx, theaterId)
 	if err != nil && err != gorm.ErrRecordNotFound {
