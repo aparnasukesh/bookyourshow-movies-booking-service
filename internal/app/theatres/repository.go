@@ -78,6 +78,7 @@ type Repository interface {
 	UpdateShowtime(ctx context.Context, id int, showtime Showtime) error
 	ListShowTimeByTheaterID(ctx context.Context, screenIDs []int) ([]Showtime, error)
 	ListShowTimeByTheaterIDandMovieID(ctx context.Context, screenIDs []int, movieId int) ([]Showtime, error)
+	ListShowtimesByShowDateAndMovieID(ctx context.Context, showDate time.Time, movieId int) ([]Showtime, error)
 	// Movie Shedule
 	GetMovieScheduleByDetails(ctx context.Context, movieId, theaterId, showtimeId int) (*MovieSchedule, error)
 	CreateMovieSchedule(ctx context.Context, movieSchedule MovieSchedule) error
@@ -159,7 +160,7 @@ func (r *repository) DeleteSeatBySeatNumberAndScreenId(ctx context.Context, scre
 
 func (r *repository) GetSeatById(ctx context.Context, id int) (*Seat, error) {
 	seat := Seat{}
-	if err := r.db.Where("id = ?", id).First(&seat).Error; err != nil {
+	if err := r.db.Preload("TheaterScreen").Preload("SeatCategory").Where("id = ?", id).First(&seat).Error; err != nil {
 		return nil, err
 	}
 	return &seat, nil
@@ -191,7 +192,7 @@ func (r *repository) CreateSeat(ctx context.Context, seat Seat) error {
 }
 func (r *repository) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error) {
 	seats := []Seat{}
-	result := r.db.Where("screen_id =? ", screenId).Find(&seats)
+	result := r.db.Preload("TheaterScreen").Preload("SeatCategory").Where("screen_id =? ", screenId).Find(&seats)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -900,6 +901,18 @@ func (r *repository) UpdateShowtime(ctx context.Context, id int, showtime Showti
 func (r *repository) FindShowtimeByDetails(ctx context.Context, movieID int, screenID int, showDate time.Time, showTime time.Time) (*Showtime, error) {
 	showtime := &Showtime{}
 	res := r.db.Where("movie_id = ? AND screen_id = ? AND show_date = ? AND show_time = ?", movieID, screenID, showDate, showTime).First(showtime)
+	if res.Error != nil {
+		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, res.Error
+	}
+	return showtime, nil
+}
+
+func (r *repository) ListShowtimesByShowDateAndMovieID(ctx context.Context, showDate time.Time, movieId int) ([]Showtime, error) {
+	showtime := []Showtime{}
+	res := r.db.Preload("Movie").Preload("TheaterScreen").Where("movie_id = ? AND show_date = ?", movieId, showDate).Find(&showtime)
 	if res.Error != nil {
 		if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
 			return nil, gorm.ErrRecordNotFound

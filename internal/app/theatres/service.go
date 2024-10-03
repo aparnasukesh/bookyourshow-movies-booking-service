@@ -68,6 +68,7 @@ type Service interface {
 	ListShowtimes(ctx context.Context, movieID int) ([]Showtime, error)
 	ListShowTimeByTheaterID(ctx context.Context, theaterId int) ([]Showtime, *Theater, error)
 	ListShowTimeByTheaterIDandMovieID(ctx context.Context, theaterId, movieId int) ([]Showtime, *Theater, *movies.Movie, error)
+	ListShowtimesByShowDateAndMovieID(ctx context.Context, showDate time.Time, movieId int) ([]Showtime, error)
 	// Movie Schedule
 	AddMovieSchedule(ctx context.Context, movieSchedule MovieSchedule, ownerId int) error
 	UpdateMovieSchedule(ctx context.Context, id int, updateData MovieSchedule, ownerId int) error
@@ -1163,5 +1164,34 @@ func (s *service) ListShowtimes(ctx context.Context, movieID int) ([]Showtime, e
 	if len(showtimes) < 1 {
 		return nil, errors.New("no showtimes found")
 	}
+	return showtimes, nil
+}
+func (s *service) ListShowtimesByShowDateAndMovieID(ctx context.Context, showDate time.Time, movieId int) ([]Showtime, error) {
+	movie, err := s.movieRepo.GetMovieDetailsById(ctx, movieId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("movie not found with id %d, movie id is invalid", movieId)
+		}
+		return nil, err
+	}
+
+	showtimes, err := s.repo.ListShowtimesByShowDateAndMovieID(ctx, showDate, int(movie.ID))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(showtimes) == 0 {
+		return nil, fmt.Errorf("no showtimes found with movie id %d on date %v", movieId, showDate)
+	}
+
+	for i := range showtimes {
+		theater, err := s.repo.GetTheaterByID(ctx, showtimes[i].TheaterScreen.TheaterID)
+		if err != nil {
+			return nil, err
+		}
+
+		showtimes[i].TheaterScreen.Theater = *theater
+	}
+
 	return showtimes, nil
 }
