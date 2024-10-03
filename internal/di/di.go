@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/aparnasukesh/movies-booking-svc/config"
+	"github.com/aparnasukesh/movies-booking-svc/internal/app/booking"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 	"github.com/aparnasukesh/movies-booking-svc/internal/boot"
@@ -31,12 +32,17 @@ func InitResources(cfg config.Config) (func() error, error) {
 	movieGrpcHandler := movies.NewGrpcHandler(movieService)
 
 	// Theatres Module initialization
-	repo := theatres.NewRepository(db)
-	service := theatres.NewService(repo, movieRepo)
+	theaterRepo := theatres.NewRepository(db)
+	service := theatres.NewService(theaterRepo, movieRepo)
 	theatresGrpcHandler := theatres.NewGrpcHandler(service)
 
+	// Booking Module Initialization
+	bookingRepo := booking.NewRepository(db)
+	bookingService := booking.NewService(db, bookingRepo, movieRepo, theaterRepo)
+	bookingGrpcHandler := booking.NewGrpcHandler(bookingService)
+
 	// Server initialization
-	server, err := boot.NewGrpcServer(cfg, movieGrpcHandler, theatresGrpcHandler)
+	server, err := boot.NewGrpcServer(cfg, movieGrpcHandler, theatresGrpcHandler, bookingGrpcHandler)
 	if err != nil {
 		log.Fatal(err)
 	}

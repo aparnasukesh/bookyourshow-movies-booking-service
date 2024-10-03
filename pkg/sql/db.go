@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/aparnasukesh/movies-booking-svc/config"
+	"github.com/aparnasukesh/movies-booking-svc/internal/app/booking"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 
@@ -43,6 +44,8 @@ func NewSql(config config.Config) (*gorm.DB, error) {
 	dbInstance.AutoMigrate(&theatres.Showtime{})
 	dbInstance.AutoMigrate(&theatres.MovieSchedule{})
 	dbInstance.AutoMigrate(&theatres.Seat{})
+	dbInstance.AutoMigrate(&booking.Booking{})
+	dbInstance.AutoMigrate(&booking.BookingSeat{})
 
 	log.Println("Successfully auto-migrated all tables.")
 

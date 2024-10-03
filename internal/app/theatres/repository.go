@@ -102,6 +102,7 @@ type Repository interface {
 	DeleteSeatById(ctx context.Context, id int) error
 	DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error
 	GetSeatById(ctx context.Context, id int) (*Seat, error)
+	GetSeatsByIds(ctx context.Context, ids []int) ([]Seat, error)
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -920,4 +921,16 @@ func (r *repository) ListShowtimesByShowDateAndMovieID(ctx context.Context, show
 		return nil, res.Error
 	}
 	return showtime, nil
+}
+
+func (r *repository) GetSeatsByIds(ctx context.Context, ids []int) ([]Seat, error) {
+	var seats []Seat
+	if err := r.db.Preload("TheaterScreen").Preload("SeatCategory").
+		Where("id IN ?", ids).
+		Find(&seats).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return seats, nil
 }
