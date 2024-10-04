@@ -19,6 +19,8 @@ type service struct {
 
 type Service interface {
 	CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error)
+	GetBookingByID(ctx context.Context, bookingId int) (*Booking, error)
+	ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error)
 }
 
 func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository) Service {
@@ -102,4 +104,23 @@ func (s *service) checkSeatAvailability(ctx context.Context, tx *gorm.DB, showti
 	}
 
 	return nil
+}
+
+func (s *service) GetBookingByID(ctx context.Context, bookingId int) (*Booking, error) {
+	bookings, err := s.repo.GetBookingByID(ctx, bookingId)
+	if err != nil {
+		return nil, err
+	}
+	return bookings, err
+}
+
+func (s *service) ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error) {
+	bookings, err := s.repo.ListBookingsByUser(ctx, userId)
+	if len(bookings) < 1 {
+		return nil, fmt.Errorf("no bookings found with user id %d", userId)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return bookings, nil
 }
