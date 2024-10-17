@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aparnasukesh/inter-communication/payment"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 	"gorm.io/gorm"
 )
 
 type service struct {
-	db          *gorm.DB
-	repo        Repository
-	movieRepo   movies.Repository
-	theaterRepo theatres.Repository
+	db            *gorm.DB
+	repo          Repository
+	movieRepo     movies.Repository
+	theaterRepo   theatres.Repository
+	paymentClient payment.PaymentServiceClient
 }
 
 type Service interface {
@@ -23,14 +25,16 @@ type Service interface {
 	ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error)
 }
 
-func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository) Service {
+func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository, paymentClient payment.PaymentServiceClient) Service {
 	return &service{
-		db:          db,
-		repo:        repo,
-		movieRepo:   movieRepo,
-		theaterRepo: theaterRepo,
+		db:            db,
+		repo:          repo,
+		movieRepo:     movieRepo,
+		theaterRepo:   theaterRepo,
+		paymentClient: paymentClient,
 	}
 }
+
 func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error) {
 	seats, err := s.theaterRepo.GetSeatsByIds(ctx, createReq.SeatIDs)
 	if err != nil {
@@ -81,7 +85,6 @@ func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequ
 		tx.Rollback()
 		return nil, nil, err
 	}
-
 	if err := tx.Commit().Error; err != nil {
 		return nil, nil, err
 	}

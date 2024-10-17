@@ -18,10 +18,11 @@ type Config struct {
 	GrpcUserAdminServicePort string `mapstructure:"GrpcUserAdminServicePort" validate:"required"`
 	RedisPort                string `mapstructure:"RedisPort" validate:"required"`
 	RedisHost                string `mapstructure:"REDISHOST" validate:"required"`
+	GrpcPaymentPort          string `mapstructure:"GrpcPaymentPort" validate:"required"`
 }
 
 var envs = []string{
-	"DBHOST", "DBNAME", "DBUSER", "DBPORT", "DBPASSWORD", "GRPCPORT", "GrpcNotificationPort", "GrpcUserAdminServicePort", "RedisPort", "REDISHOST",
+	"DBHOST", "DBNAME", "DBUSER", "DBPORT", "DBPASSWORD", "GRPCPORT", "GrpcNotificationPort", "GrpcUserAdminServicePort", "RedisPort", "REDISHOST", "GrpcPaymentPort",
 }
 
 func LoadConfig() (Config, error) {
