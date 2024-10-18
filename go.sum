@@ -20,6 +20,10 @@ github.com/aparnasukesh/inter-communication v1.5.9 h1:JTeH8bOaacQsLTkLvSR0h+c5YQ
 github.com/aparnasukesh/inter-communication v1.5.9/go.mod h1:YbXWMsZIRhZ8wkMsCilsXhef6ztWDhin1qjhguOeook=
 github.com/aparnasukesh/inter-communication v1.6.3 h1:TuiyFtnk2rMih5JWcEq8sfKuYy+vlALIEdNFlHH4Lpo=
 github.com/aparnasukesh/inter-communication v1.6.3/go.mod h1:YbXWMsZIRhZ8wkMsCilsXhef6ztWDhin1qjhguOeook=
+github.com/aparnasukesh/inter-communication v1.6.5 h1:1bfldU1YI0lwx2wvpUP3c/wySC+se3pyD12CXVVn13g=
+github.com/aparnasukesh/inter-communication v1.6.5/go.mod h1:YbXWMsZIRhZ8wkMsCilsXhef6ztWDhin1qjhguOeook=
+github.com/aparnasukesh/inter-communication v1.6.8 h1:sC6SNj0dbeDoAiVInxU4jqeHuU8pMuaXh3BCp/IuMt0=
+github.com/aparnasukesh/inter-communication v1.6.8/go.mod h1:YbXWMsZIRhZ8wkMsCilsXhef6ztWDhin1qjhguOeook=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

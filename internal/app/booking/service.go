@@ -23,6 +23,8 @@ type Service interface {
 	CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error)
 	GetBookingByID(ctx context.Context, bookingId int) (*Booking, error)
 	ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error)
+	DeleteBookingByBookingID(ctx context.Context, bookingId int) error
+	UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error
 }
 
 func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository, paymentClient payment.PaymentServiceClient) Service {
@@ -126,4 +128,21 @@ func (s *service) ListBookingsByUser(ctx context.Context, userId int) ([]Booking
 		return nil, err
 	}
 	return bookings, nil
+}
+
+func (s *service) DeleteBookingByBookingID(ctx context.Context, bookingId int) error {
+	if err := s.repo.DeleteBookingByBookingID(ctx, bookingId); err != nil {
+		return err
+	}
+	if err := s.repo.DeleteBookingSeats(ctx, bookingId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error {
+	if err := s.repo.UpdateBookingStatusByBookingID(ctx, bookingId, status); err != nil {
+		return err
+	}
+	return nil
 }

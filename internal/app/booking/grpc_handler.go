@@ -111,3 +111,19 @@ func (h *GrpcHandler) ListBookingsByUser(ctx context.Context, req *movie_booking
 		Bookings: response,
 	}, nil
 }
+
+func (h *GrpcHandler) DeleteBookingByBookingID(ctx context.Context, req *movie_booking.DeleteBookingByIDRequest) (*movie_booking.DeleteBookingByIDResponse, error) {
+	err := h.svc.DeleteBookingByBookingID(ctx, int(req.BookingId))
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (h *GrpcHandler) UpdateBookingStatusByBookingID(ctx context.Context, req *movie_booking.UpdateBookingStatusByBookingIDRequest) (*movie_booking.UpdateBookingStatusByBookingIDResponse, error) {
+	err := h.svc.UpdateBookingStatusByBookingID(ctx, int(req.BookingId), req.Status)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
