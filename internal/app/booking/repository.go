@@ -16,6 +16,9 @@ type Repository interface {
 	CreateBookingSeats(ctx context.Context, bookingSeats []BookingSeat) error
 	GetBookingByID(ctx context.Context, bookingId int) (*Booking, error)
 	ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error)
+	DeleteBookingByBookingID(ctx context.Context, bookingId int) error
+	UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error
+	DeleteBookingSeats(ctx context.Context, bookingId int) error
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -60,4 +63,27 @@ func (r *repository) ListBookingsByUser(ctx context.Context, userId int) ([]Book
 		return nil, res.Error
 	}
 	return booking, nil
+}
+func (r *repository) DeleteBookingByBookingID(ctx context.Context, bookingId int) error {
+	if err := r.db.Where("booking_id = ?", bookingId).Delete(&Booking{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error {
+	booking := Booking{}
+
+	err := r.db.Model(&booking).Where("booking_id = ? AND payment_status ILIKE ?", bookingId, "Pending").Update("payment_status", status).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (r *repository) DeleteBookingSeats(ctx context.Context, bookingId int) error {
+	if err := r.db.Where("booking_id = ?", bookingId).Delete(&BookingSeat{}).Error; err != nil {
+		return err
+	}
+	return nil
 }

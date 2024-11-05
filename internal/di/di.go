@@ -8,6 +8,7 @@ import (
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 	"github.com/aparnasukesh/movies-booking-svc/internal/boot"
+	grpclient "github.com/aparnasukesh/movies-booking-svc/pkg/grpClient"
 	redis "github.com/aparnasukesh/movies-booking-svc/pkg/redis"
 	sql "github.com/aparnasukesh/movies-booking-svc/pkg/sql"
 )
@@ -37,8 +38,12 @@ func InitResources(cfg config.Config) (func() error, error) {
 	theatresGrpcHandler := theatres.NewGrpcHandler(service)
 
 	// Booking Module Initialization
+	paymentSvcClient, err := grpclient.NewBookingPaymentServiceClient(cfg.GrpcPaymentPort)
+	if err != nil {
+		return nil, err
+	}
 	bookingRepo := booking.NewRepository(db)
-	bookingService := booking.NewService(db, bookingRepo, movieRepo, theaterRepo)
+	bookingService := booking.NewService(db, bookingRepo, movieRepo, theaterRepo, paymentSvcClient)
 	bookingGrpcHandler := booking.NewGrpcHandler(bookingService)
 
 	// Server initialization

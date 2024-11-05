@@ -5,32 +5,38 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aparnasukesh/inter-communication/payment"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/movies"
 	"github.com/aparnasukesh/movies-booking-svc/internal/app/theatres"
 	"gorm.io/gorm"
 )
 
 type service struct {
-	db          *gorm.DB
-	repo        Repository
-	movieRepo   movies.Repository
-	theaterRepo theatres.Repository
+	db            *gorm.DB
+	repo          Repository
+	movieRepo     movies.Repository
+	theaterRepo   theatres.Repository
+	paymentClient payment.PaymentServiceClient
 }
 
 type Service interface {
 	CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error)
 	GetBookingByID(ctx context.Context, bookingId int) (*Booking, error)
 	ListBookingsByUser(ctx context.Context, userId int) ([]Booking, error)
+	DeleteBookingByBookingID(ctx context.Context, bookingId int) error
+	UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error
 }
 
-func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository) Service {
+func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theaterRepo theatres.Repository, paymentClient payment.PaymentServiceClient) Service {
 	return &service{
-		db:          db,
-		repo:        repo,
-		movieRepo:   movieRepo,
-		theaterRepo: theaterRepo,
+		db:            db,
+		repo:          repo,
+		movieRepo:     movieRepo,
+		theaterRepo:   theaterRepo,
+		paymentClient: paymentClient,
 	}
 }
+
 func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error) {
 	seats, err := s.theaterRepo.GetSeatsByIds(ctx, createReq.SeatIDs)
 	if err != nil {
@@ -81,7 +87,6 @@ func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequ
 		tx.Rollback()
 		return nil, nil, err
 	}
-
 	if err := tx.Commit().Error; err != nil {
 		return nil, nil, err
 	}
@@ -123,4 +128,21 @@ func (s *service) ListBookingsByUser(ctx context.Context, userId int) ([]Booking
 		return nil, err
 	}
 	return bookings, nil
+}
+
+func (s *service) DeleteBookingByBookingID(ctx context.Context, bookingId int) error {
+	if err := s.repo.DeleteBookingByBookingID(ctx, bookingId); err != nil {
+		return err
+	}
+	if err := s.repo.DeleteBookingSeats(ctx, bookingId); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *service) UpdateBookingStatusByBookingID(ctx context.Context, bookingId int, status string) error {
+	if err := s.repo.UpdateBookingStatusByBookingID(ctx, bookingId, status); err != nil {
+		return err
+	}
+	return nil
 }
