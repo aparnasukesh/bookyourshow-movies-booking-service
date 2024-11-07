@@ -85,6 +85,7 @@ type Service interface {
 	// Seats
 	CreateSeats(ctx context.Context, req CreateSeatsRequest, ownerId int) error
 	GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat, error)
+	GetAvailableSeatsByScreenIdAndShowTimeID(ctx context.Context, screenId int, showtimeId int) ([]Seat, error)
 	GetSeatById(ctx context.Context, id int) (*Seat, error)
 	GetSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) (*Seat, error)
 	DeleteSeatById(ctx context.Context, id int) error
@@ -351,6 +352,43 @@ func (s *service) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat,
 	}
 	if err != nil {
 		return nil, err
+	}
+	return seats, nil
+}
+
+func (s *service) GetAvailableSeatsByScreenIdAndShowTimeID(ctx context.Context, screenId int, showtimeId int) ([]Seat, error) {
+	bookings, err := s.repo.GetBooingsByScreenIDAndShowTimeID(ctx, screenId, showtimeId)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	bookingsIds := []int{}
+	for _, id := range bookings {
+		bookingsIds = append(bookingsIds, int(id.BookingID))
+	}
+	bookedSeats, err := s.repo.GetBookingSeatsByBookingID(ctx, bookingsIds)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	seats := []Seat{}
+	allSeats, err := s.repo.GetSeatsByScreenId(ctx, screenId)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+	if len(allSeats) < 1 {
+		return nil, fmt.Errorf("no seats found with screen id %d", screenId)
+	}
+	for i := 0; i < len(allSeats); i++ {
+		flag := 0
+		for j := 0; j < len(bookedSeats); j++ {
+			if allSeats[i].ID == bookedSeats[j].BookingID {
+				flag = 1
+				break
+			}
+		}
+		if flag == 0 {
+			seats = append(seats, allSeats[i])
+		}
+
 	}
 	return seats, nil
 }

@@ -103,6 +103,8 @@ type Repository interface {
 	DeleteSeatBySeatNumberAndScreenId(ctx context.Context, screenId int, seatNumber string) error
 	GetSeatById(ctx context.Context, id int) (*Seat, error)
 	GetSeatsByIds(ctx context.Context, ids []int) ([]Seat, error)
+	GetBooingsByScreenIDAndShowTimeID(ctx context.Context, screenId int, showtimeId int) ([]Booking, error)
+	GetBookingSeatsByBookingID(ctx context.Context, bookingIds []int) ([]BookingSeat, error)
 }
 
 func NewRepository(db *gorm.DB) Repository {
@@ -933,4 +935,20 @@ func (r *repository) GetSeatsByIds(ctx context.Context, ids []int) ([]Seat, erro
 	}
 
 	return seats, nil
+}
+
+func (r *repository) GetBooingsByScreenIDAndShowTimeID(ctx context.Context, screenId int, showtimeId int) ([]Booking, error) {
+	bookings := []Booking{}
+	if err := r.db.Where("screen_id = ? AND showtime_id = ?", screenId, showtimeId).Find(&bookings).Error; err != nil {
+		return nil, err
+	}
+	return bookings, nil
+}
+
+func (r *repository) GetBookingSeatsByBookingID(ctx context.Context, bookingIds []int) ([]BookingSeat, error) {
+	bookingSeats := []BookingSeat{}
+	if err := r.db.Where("booking_id IN ?", bookingIds).Find(&bookingSeats).Error; err != nil {
+		return nil, err
+	}
+	return bookingSeats, nil
 }
