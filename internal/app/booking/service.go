@@ -38,6 +38,13 @@ func NewService(db *gorm.DB, repo Repository, movieRepo movies.Repository, theat
 }
 
 func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequest) (*Booking, []BookingSeat, error) {
+	showtime, err := s.theaterRepo.GetShowtimeByID(ctx, createReq.ShowtimeID)
+	if err != nil && err == gorm.ErrRecordNotFound {
+		return nil, nil, fmt.Errorf("invalid showtime id %d", createReq.ShowtimeID)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, nil, err
+	}
 	seats, err := s.theaterRepo.GetSeatsByIds(ctx, createReq.SeatIDs)
 	if err != nil {
 		return nil, nil, err
@@ -65,7 +72,7 @@ func (s *service) CreateBooking(ctx context.Context, createReq CreateBookingRequ
 	booking := &Booking{
 		UserID:        uint(createReq.UserID),
 		ShowtimeID:    uint(createReq.ShowtimeID),
-		ScreenID:      createReq.ScreenID,
+		ScreenID:      uint(showtime.ScreenID),
 		BookingDate:   time.Now(),
 		TotalAmount:   totalAmount,
 		PaymentStatus: "Pending",

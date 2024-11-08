@@ -357,6 +357,13 @@ func (s *service) GetSeatsByScreenId(ctx context.Context, screenId int) ([]Seat,
 }
 
 func (s *service) GetAvailableSeatsByScreenIdAndShowTimeID(ctx context.Context, screenId int, showtimeId int) ([]Seat, error) {
+	_, err := s.repo.GetShowtimeByID(ctx, showtimeId)
+	if err != nil && err == gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("invalid showtime id %d", showtimeId)
+	}
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
 	bookings, err := s.repo.GetBooingsByScreenIDAndShowTimeID(ctx, screenId, showtimeId)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
@@ -380,7 +387,7 @@ func (s *service) GetAvailableSeatsByScreenIdAndShowTimeID(ctx context.Context, 
 	for i := 0; i < len(allSeats); i++ {
 		flag := 0
 		for j := 0; j < len(bookedSeats); j++ {
-			if allSeats[i].ID == bookedSeats[j].BookingID {
+			if allSeats[i].ID == bookedSeats[j].SeatID {
 				flag = 1
 				break
 			}

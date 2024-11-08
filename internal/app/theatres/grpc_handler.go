@@ -365,7 +365,7 @@ func (h *GrpcHandler) GetSeatsByScreenID(ctx context.Context, req *movie_booking
 	return &movie_booking.GetSeatsByScreenIDResponse{Seats: grpcSeats}, nil
 }
 
-func (h *GrpcHandler) GetAvailableSeatsByScreenIdAndShowTimeID(ctx context.Context, req *movie_booking.GetAvailableSeatsByScreenIDAndShowTimeIDRequest) (*movie_booking.GetAvailableSeatsByScreenIDAndShowTimeIDResponse, error) {
+func (h *GrpcHandler) GetAvailableSeatsByScreenIDAndShowTimeID(ctx context.Context, req *movie_booking.GetAvailableSeatsByScreenIDAndShowTimeIDRequest) (*movie_booking.GetAvailableSeatsByScreenIDAndShowTimeIDResponse, error) {
 	seats, err := h.svc.GetAvailableSeatsByScreenIdAndShowTimeID(ctx, int(req.ScreenId), int(req.ShowtimeId))
 	if err != nil {
 		return nil, err
