@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movies-booking-svc
+  labels:
+    app: movies-booking-svc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: movies-booking-svc
+  template:
+    metadata:
+      labels:
+        app: movies-booking-svc
+    spec:
+      containers:
+        - name: movies-booking-svc
+          image: aparnasukesh/movies-booking-svc:latest
+          ports:
+            - containerPort: 5053
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: movies-booking-svc
+  labels:
+    app: movies-booking-svc
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5053
+      targetPort: 5053
+  selector:
+    app: movies-booking-svc
