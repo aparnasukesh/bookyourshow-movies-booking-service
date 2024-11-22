@@ -18,7 +18,7 @@ spec:
         - name: postgres-db
           image: postgres:latest
           ports:
-            - containerPort: 5432  # Port for PostgreSQL
+            - containerPort: 5432  
           env:
             - name: POSTGRES_DB
               value: "book_your_show_movies_bookings"  # Database name
