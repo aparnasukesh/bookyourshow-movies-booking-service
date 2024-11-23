@@ -34,7 +34,7 @@ metadata:
   labels:
     app: movies-booking-svc
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - port: 5053
       targetPort: 5053
