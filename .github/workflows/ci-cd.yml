@@ -57,7 +57,7 @@ jobs:
 
       - name: Configure kubectl for EKS
         run: |
-          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name bookyourshow-cluster
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name bookyourshow
 
       - name: Debug - List Root Directory
         run: ls -R .
