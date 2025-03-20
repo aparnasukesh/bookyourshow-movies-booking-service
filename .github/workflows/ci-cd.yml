@@ -73,3 +73,8 @@ jobs:
       - name: Apply Movies Booking Service Kubernetes manifest
         run: |
           kubectl apply -f k8s/movies-booking-svc.yaml
+
+      # Ensure deployment restarts to pick up new image
+      - name: Restart Movies Booking Deployment
+        run: |
+          kubectl rollout restart deployment movies-booking-svc
