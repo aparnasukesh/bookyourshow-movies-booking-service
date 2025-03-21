@@ -75,6 +75,6 @@ jobs:
           kubectl apply -f k8s/movies-booking-svc.yaml
 
       # Ensure deployment restarts to pick up new image
-      - name: Restart Movies Booking Deployment
+      - name: Restart Movies Booking Service Deployment
         run: |
           kubectl rollout restart deployment movies-booking-svc
