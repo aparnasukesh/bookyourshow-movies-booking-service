@@ -1,51 +1,7 @@
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: movies-booking-svc
-#   labels:
-#     app: movies-booking-svc
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: movies-booking-svc
-#   template:
-#     metadata:
-#       labels:
-#         app: movies-booking-svc
-#     spec:
-#       containers:
-#         - name: movies-booking-svc
-#           image: aparnasukesh/movies-booking-svc:latest
-#           ports:
-#             - containerPort: 5053
-#           resources:
-#             requests:
-#               memory: "64Mi"  # Reduced from 128Mi
-#               cpu: "100m"     # Reduced from 250m
-#             limits:
-#               memory: "128Mi" # Reduced from 256Mi
-#               cpu: "250m"     # Reduced from 500m
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: movies-booking-svc
-#   labels:
-#     app: movies-booking-svc
-# spec:
-#   type: ClusterIP
-#   ports:
-#     - port: 5053
-#       targetPort: 5053
-#   selector:
-#     app: movies-booking-svc
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: movies-booking-svc
-  namespace: bookyourshow
   labels:
     app: movies-booking-svc
 spec:
@@ -75,7 +31,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: movies-booking-svc
-  namespace: bookyourshow
   labels:
     app: movies-booking-svc
 spec:
