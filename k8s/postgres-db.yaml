@@ -1,7 +1,57 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: postgres-db
+#   labels:
+#     app: postgres-db
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: postgres-db
+#   template:
+#     metadata:
+#       labels:
+#         app: postgres-db
+#     spec:
+#       containers:
+#         - name: postgres-db
+#           image: postgres:latest
+#           ports:
+#             - containerPort: 5432  
+#           env:
+#             - name: POSTGRES_DB
+#               value: "book_your_show_movies_bookings"  # Database name
+#             - name: POSTGRES_USER
+#               value: "postgres"  # Database user
+#             - name: POSTGRES_PASSWORD
+#               value: "2585"  # Database password
+#           resources:
+#             requests:
+#               memory: "256Mi"
+#               cpu: "500m"
+#             limits:
+#               memory: "512Mi"
+#               cpu: "1"
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: postgres-db
+#   labels:
+#     app: postgres-db
+# spec:
+#   ports:
+#     - port: 5432
+#       targetPort: 5432
+#   selector:
+#     app: postgres-db
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres-db
+  namespace: bookyourshow
   labels:
     app: postgres-db
 spec:
@@ -25,7 +75,10 @@ spec:
             - name: POSTGRES_USER
               value: "postgres"  # Database user
             - name: POSTGRES_PASSWORD
-              value: "2585"  # Database password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD  # Secure the password using a Kubernetes secret
           resources:
             requests:
               memory: "256Mi"
@@ -38,6 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres-db
+  namespace: bookyourshow
   labels:
     app: postgres-db
 spec:
@@ -46,3 +100,12 @@ spec:
       targetPort: 5432
   selector:
     app: postgres-db
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: bookyourshow
+type: Opaque
+data:
+  POSTGRES_PASSWORD: "MjU4NQ=="  # Base64 encoded "2585"
