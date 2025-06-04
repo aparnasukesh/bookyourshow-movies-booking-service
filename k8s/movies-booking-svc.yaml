@@ -22,7 +22,7 @@ spec:
           resources:
             requests:
               memory: "64Mi"  # Reduced from 128Mi
-              cpu: "100m"     # Reduced from 250m
+              cpu: "100m"     # Reduced from 250m.
             limits:
               memory: "128Mi" # Reduced from 256Mi
               cpu: "250m"     # Reduced from 500m
