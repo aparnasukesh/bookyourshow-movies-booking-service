@@ -31,5 +31,5 @@ COPY .env .
 # Expose the port that the app listens on
 EXPOSE 5050
 
-# Command to run the application
+# Command to run the application.
 CMD ["./main"]
