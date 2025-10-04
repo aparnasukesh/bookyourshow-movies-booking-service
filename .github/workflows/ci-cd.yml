@@ -1,4 +1,85 @@
 
+# name: CI/CD Pipeline for Movies Booking Service
+
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     branches:
+#       - master
+
+# jobs:
+#   build-and-push-docker:
+#     name: Build and Push Docker Image
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Check out the code
+#         uses: actions/checkout@v3
+
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKER_USERNAME }}
+#           password: ${{ secrets.DOCKER_PASSWORD }}
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+
+#       - name: Build and push Docker image for Movies Booking Service
+#         run: |
+#           docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/movies-booking-svc:latest -f Dockerfile --push .
+
+#   deploy-to-kubernetes:
+#     name: Deploy Movies Booking Service to Kubernetes
+#     needs: build-and-push-docker
+#     runs-on: ubuntu-latest
+#     if: github.ref == 'refs/heads/master'
+
+#     steps:
+#       - name: Check out the code
+#         uses: actions/checkout@v3
+
+#       - name: Configure AWS credentials
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         run: |
+#           aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+#           aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+#           aws configure set region ${{ secrets.AWS_REGION }}
+
+#       - name: Set up kubectl
+#         uses: azure/setup-kubectl@v3
+#         with:
+#           version: 'latest'
+
+#       - name: Configure kubectl for EKS
+#         run: |
+#           aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name bookyourshow
+
+#       - name: Debug - List Root Directory
+#         run: ls -R .
+
+#       - name: Apply Postgres Kubernetes manifest
+#         run: |
+#           kubectl apply -f k8s/postgres-db.yaml
+
+#       - name: Apply Redis Kubernetes manifest
+#         run: |
+#           kubectl apply -f k8s/redis-deployment.yaml
+          
+#       - name: Apply Movies Booking Service Kubernetes manifest
+#         run: |
+#           kubectl apply -f k8s/movies-booking-svc.yaml
+
+#       # Ensure deployment restarts to pick up new image
+#       - name: Restart Movies Booking Service Deployment
+#         run: |
+#           kubectl rollout restart deployment movies-booking-svc
+
+
 name: CI/CD Pipeline for Movies Booking Service
 
 on:
@@ -29,10 +110,12 @@ jobs:
 
       - name: Build and push Docker image for Movies Booking Service
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/movies-booking-svc:latest -f Dockerfile --push .
+          docker buildx build --platform linux/amd64 \
+            -t ${{ secrets.DOCKER_USERNAME }}/movies-booking-svc:latest \
+            -f Dockerfile --push .
 
-  deploy-to-kubernetes:
-    name: Deploy Movies Booking Service to Kubernetes
+  deploy-to-gke:
+    name: Deploy Movies Booking Service to GKE
     needs: build-and-push-docker
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
@@ -41,40 +124,37 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set region ${{ secrets.AWS_REGION }}
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
+      # Authenticate to GCP with Service Account JSON
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          version: 'latest'
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure kubectl for EKS
+      # Setup gcloud SDK
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          install_components: 'gke-gcloud-auth-plugin'
+
+      # Get credentials for your GKE cluster
+      - name: Configure kubectl for GKE
         run: |
-          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name bookyourshow
+          gcloud container clusters get-credentials bookyourshow-cluster \
+            --zone ${{ secrets.GCP_ZONE }} \
+            --project ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Debug - List Root Directory
         run: ls -R .
 
-      - name: Apply Postgres Kubernetes manifest
+      # Apply Postgres, Redis, and Movies Booking Service manifests
+      - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s/postgres-db.yaml
-
-      - name: Apply Redis Kubernetes manifest
-        run: |
           kubectl apply -f k8s/redis-deployment.yaml
-          
-      - name: Apply Movies Booking Service Kubernetes manifest
-        run: |
           kubectl apply -f k8s/movies-booking-svc.yaml
 
-      # Ensure deployment restarts to pick up new image
+      # Restart deployment to pick up new image
       - name: Restart Movies Booking Service Deployment
         run: |
           kubectl rollout restart deployment movies-booking-svc
