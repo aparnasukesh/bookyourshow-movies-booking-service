@@ -147,7 +147,7 @@ jobs:
       - name: Debug - List Root Directory
         run: ls -R .
 
-      # Apply Postgres, Redis, and Movies Booking Service manifests
+      # Apply Postgres, Redis, and Movies Booking Service manifests.
       - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s/postgres-db.yaml
